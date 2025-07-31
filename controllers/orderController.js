@@ -1,0 +1,311 @@
+import Order from "../models/Order.js";
+import Product from "../models/Product.js";
+import { createTransporter } from "../utils/emailService.js";
+
+// Calculate shipping cost based on order total
+const calculateShipping = (subtotal) => {
+  return subtotal >= 500 ? 0 : 20; // Free shipping for orders ≥ $500
+};
+
+// Send order confirmation email
+const sendOrderConfirmationEmail = async (order) => {
+  try {
+    const transporter = createTransporter();
+    
+    const mailOptions = {
+      from: "shehzadali.6714349@gmail.com",
+      to: order.customer.email,
+      subject: `Order Confirmation - ${order.orderNumber}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Order Confirmation</h2>
+          <p>Dear ${order.customer.name},</p>
+          <p>Thank you for your order! Your order has been successfully placed.</p>
+          
+          <div style="background: #f9f9f9; padding: 20px; margin: 20px 0; border-radius: 5px;">
+            <h3>Order Details</h3>
+            <p><strong>Order Number:</strong> ${order.orderNumber}</p>
+            <p><strong>Order Date:</strong> ${new Date(order.createdAt).toLocaleDateString()}</p>
+            <p><strong>Status:</strong> ${order.status}</p>
+          </div>
+          
+          <div style="margin: 20px 0;">
+            <h3>Items Ordered:</h3>
+            ${order.items.map(item => `
+              <div style="border-bottom: 1px solid #eee; padding: 10px 0;">
+                <p><strong>${item.productName}</strong></p>
+                <p>Quantity: ${item.quantity}</p>
+                <p>Price: $${item.price}</p>
+                <p>Total: $${item.totalPrice}</p>
+              </div>
+            `).join('')}
+          </div>
+          
+          <div style="background: #f0f0f0; padding: 15px; border-radius: 5px;">
+            <p><strong>Subtotal:</strong> $${order.subtotal}</p>
+            <p><strong>Shipping:</strong> $${order.shippingCost}</p>
+            <p><strong>Total:</strong> $${order.total}</p>
+          </div>
+          
+          <p>We'll send you another email when your order ships.</p>
+          <p>Thank you for shopping with us!</p>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Order confirmation email sent to ${order.customer.email}`);
+  } catch (error) {
+    console.error("❌ Error sending order confirmation email:", error);
+    throw error; // Re-throw so we can catch it in createOrder
+  }
+};
+
+// Create new order
+export const createOrder = async (req, res) => {
+  try {
+    const { customer, items, notes } = req.body;
+
+    // Calculate order totals
+    let subtotal = 0;
+    const orderItems = [];
+
+    // Process each item
+    for (const item of items) {
+      try {
+        const product = await Product.findById(item.productId);
+        if (!product) {
+          // If product not found, use the data from frontend
+          const itemTotal = item.price * item.quantity;
+          subtotal += itemTotal;
+
+          orderItems.push({
+            productId: item.productId,
+            productName: item.productName,
+            variant: {
+              size: item.size,
+              color: item.color,
+              sku: item.sku,
+            },
+            quantity: item.quantity,
+            price: item.price,
+            totalPrice: itemTotal,
+          });
+        } else {
+          const itemTotal = product.basePrice * item.quantity;
+          subtotal += itemTotal;
+
+          orderItems.push({
+            productId: product._id,
+            productName: product.title,
+            variant: {
+              size: item.size,
+              color: item.color,
+              sku: item.sku,
+            },
+            quantity: item.quantity,
+            price: product.basePrice,
+            totalPrice: itemTotal,
+          });
+        }
+      } catch (error) {
+        console.error(`Error processing item ${item.productId}:`, error);
+        // Use frontend data as fallback
+        const itemTotal = item.price * item.quantity;
+        subtotal += itemTotal;
+
+        orderItems.push({
+          productId: item.productId,
+          productName: item.productName,
+          variant: {
+            size: item.size,
+            color: item.color,
+            sku: item.sku,
+          },
+          quantity: item.quantity,
+          price: item.price,
+          totalPrice: itemTotal,
+        });
+      }
+    }
+
+    // Calculate shipping
+    const shippingCost = calculateShipping(subtotal);
+    const total = subtotal + shippingCost;
+
+    // Generate order number
+    const orderCount = await Order.countDocuments();
+    const orderNumber = `ORD-${String(orderCount + 1).padStart(6, "0")}-${Date.now().toString().slice(-4)}`;
+
+    // Create order
+    const order = new Order({
+      orderNumber,
+      customer,
+      items: orderItems,
+      subtotal,
+      shippingCost,
+      total,
+      notes,
+      isFreeShipping: shippingCost === 0,
+    });
+
+    await order.save();
+
+    // Send confirmation email and track success
+    let emailSent = false;
+    try {
+      await sendOrderConfirmationEmail(order);
+      emailSent = true;
+      console.log("✅ Order confirmation email sent successfully");
+    } catch (emailError) {
+      console.error("❌ Email sending failed, but order was created:", emailError);
+      emailSent = false;
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Order created successfully",
+      data: order,
+      emailSent: emailSent
+    });
+  } catch (error) {
+    console.error("Error creating order:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create order",
+      error: error.message,
+    });
+  }
+};
+
+// Get all orders (admin)
+export const getAllOrders = async (req, res) => {
+  try {
+    const { status, search } = req.query;
+    
+    let query = {};
+    
+    if (status && status !== "all") {
+      query.status = status;
+    }
+    
+    if (search) {
+      query.$or = [
+        { orderNumber: { $regex: search, $options: "i" } },
+        { "customer.name": { $regex: search, $options: "i" } },
+        { "customer.email": { $regex: search, $options: "i" } },
+      ];
+    }
+    
+    const orders = await Order.find(query)
+      .populate("items.productId")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: orders,
+    });
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch orders",
+      error: error.message,
+    });
+  }
+};
+
+// Get order by ID
+export const getOrderById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const order = await Order.findById(id).populate("items.productId");
+    
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: order,
+    });
+  } catch (error) {
+    console.error("Error fetching order:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch order",
+      error: error.message,
+    });
+  }
+};
+
+// Update order status
+export const updateOrderStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, trackingNumber, notes } = req.body;
+    
+    const order = await Order.findById(id);
+    
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    order.status = status;
+    if (trackingNumber) order.trackingNumber = trackingNumber;
+    if (notes) order.notes = notes;
+
+    await order.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Order updated successfully",
+      data: order,
+    });
+  } catch (error) {
+    console.error("Error updating order:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update order",
+      error: error.message,
+    });
+  }
+};
+
+// Get order statistics for dashboard
+export const getOrderStats = async (req, res) => {
+  try {
+    const totalOrders = await Order.countDocuments();
+    const totalRevenue = await Order.aggregate([
+      { $group: { _id: null, total: { $sum: "$total" } } }
+    ]);
+    
+    const recentOrders = await Order.find()
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .populate("items.productId");
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalOrders,
+        totalRevenue: totalRevenue[0]?.total || 0,
+        recentOrders,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching order stats:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch order statistics",
+      error: error.message,
+    });
+  }
+}; 
