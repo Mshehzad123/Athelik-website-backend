@@ -3,7 +3,7 @@ import Product from "../models/Product.js";
 // Get all products with search and filtering
 export const getProducts = async (req, res) => {
   try {
-    const { search, category, isActive } = req.query;
+    const { search, category, isActive, collectionType } = req.query;
     
     let query = {};
     
@@ -19,6 +19,11 @@ export const getProducts = async (req, res) => {
     // Filter by category
     if (category) {
       query.category = category;
+    }
+    
+    // Filter by collection type
+    if (collectionType) {
+      query.collectionType = collectionType;
     }
     
     // Filter by active status
@@ -45,7 +50,7 @@ export const getProducts = async (req, res) => {
 // Get public products (for main website)
 export const getPublicProducts = async (req, res) => {
   try {
-    const { search, category } = req.query;
+    const { search, category, collectionType } = req.query;
     
     let query = { isActive: true }; // Only active products for public
     
@@ -60,6 +65,11 @@ export const getPublicProducts = async (req, res) => {
     // Filter by category
     if (category) {
       query.category = category;
+    }
+    
+    // Filter by collection type
+    if (collectionType) {
+      query.collectionType = collectionType;
     }
     
     const products = await Product.find(query).sort({ createdAt: -1 });
@@ -79,6 +89,7 @@ export const getPublicProducts = async (req, res) => {
       images: product.images ? product.images.map(img => `${baseUrl}${img}`) : [],
       category: product.category,
       subCategory: product.subCategory,
+      collectionType: product.collectionType,
       description: product.description,
       isOnSale: product.variants.some(v => v.priceOverride && v.priceOverride < product.basePrice),
       colors: product.colorOptions.map(color => ({
@@ -99,7 +110,7 @@ export const getPublicProducts = async (req, res) => {
     console.error('Error fetching public products:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch products',
+      message: 'Failed to fetch public products',
       error: error.message
     });
   }

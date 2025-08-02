@@ -5,14 +5,20 @@ import {
   banUser, 
   unbanUser, 
   updateUserProfile, 
-  changePassword 
+  changePassword,
+  createUser,
+  updateUser,
+  deleteUser
 } from "../controllers/userController.js";
 import { authenticateToken, requireRole, checkUserBan } from "../middleware/auth.js";
 
 const router = express.Router();
 
 // Admin routes (require admin role)
-router.get("/admin/all", authenticateToken, requireRole("admin"), getAllUsers);
+router.get("/", authenticateToken, requireRole(["admin", "manager"]), getAllUsers);
+router.post("/", authenticateToken, requireRole("admin"), createUser);
+router.put("/:id", authenticateToken, requireRole("admin"), updateUser);
+router.delete("/:id", authenticateToken, requireRole("admin"), deleteUser);
 router.post("/admin/ban/:userId", authenticateToken, requireRole("admin"), banUser);
 router.post("/admin/unban/:userId", authenticateToken, requireRole("admin"), unbanUser);
 

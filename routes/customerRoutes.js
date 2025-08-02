@@ -1,14 +1,24 @@
 import express from "express";
 import { authenticateToken, requireRole } from "../middleware/auth.js";
 import {
-  getCustomers,
-  updateCustomer
+  getAllCustomers,
+  getCustomerById,
+  banCustomer,
+  unbanCustomer,
+  updateCustomer,
+  deleteCustomer,
+  getCustomerStats
 } from "../controllers/customerController.js";
 
 const router = express.Router();
 
-// Customer routes
-router.get('/', authenticateToken, getCustomers);
+// Admin routes (require admin role)
+router.get('/', authenticateToken, requireRole(["admin", "manager"]), getAllCustomers);
+router.get('/stats', authenticateToken, requireRole(["admin", "manager"]), getCustomerStats);
+router.get('/:id', authenticateToken, requireRole(["admin", "manager"]), getCustomerById);
 router.put('/:id', authenticateToken, requireRole(["admin", "manager"]), updateCustomer);
+router.delete('/:id', authenticateToken, requireRole("admin"), deleteCustomer);
+router.post('/ban/:customerId', authenticateToken, requireRole("admin"), banCustomer);
+router.post('/unban/:customerId', authenticateToken, requireRole("admin"), unbanCustomer);
 
 export default router; 

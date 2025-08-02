@@ -93,6 +93,12 @@ const productSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  collectionType: {
+    type: String,
+    enum: ["men", "women", "train", "general"],
+    default: "general",
+    trim: true
+  },
   description: {
     type: String,
     trim: true

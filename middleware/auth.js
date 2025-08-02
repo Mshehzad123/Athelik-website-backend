@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
+import Customer from "../models/Customer.js";
 
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || "your-super-secret-jwt-key";
@@ -17,8 +18,16 @@ export const authenticateToken = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     
-    // Check if user is banned
-    const user = await User.findById(decoded.userId);
+    // Check if user is banned - try both User and Customer models
+    let user = await User.findById(decoded.userId);
+    let userType = "admin";
+    
+    if (!user) {
+      // Try Customer model
+      user = await Customer.findById(decoded.userId);
+      userType = "customer";
+    }
+    
     if (!user) {
       return res.status(403).json({ error: "User not found" });
     }
@@ -30,7 +39,8 @@ export const authenticateToken = async (req, res, next) => {
       });
     }
     
-    req.user = decoded;
+    // Add userType to the decoded token
+    req.user = { ...decoded, userType };
     next();
   } catch (err) {
     return res.status(403).json({ error: "Invalid token" });
@@ -60,7 +70,16 @@ export const checkUserBan = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findById(decoded.userId);
+    
+    // Try both User and Customer models
+    let user = await User.findById(decoded.userId);
+    let userType = "admin";
+    
+    if (!user) {
+      // Try Customer model
+      user = await Customer.findById(decoded.userId);
+      userType = "customer";
+    }
     
     if (user && user.isBanned) {
       return res.status(403).json({ 
@@ -69,7 +88,8 @@ export const checkUserBan = async (req, res, next) => {
       });
     }
     
-    req.user = decoded;
+    // Add userType to the decoded token
+    req.user = { ...decoded, userType };
     next();
   } catch (err) {
     // Invalid token, but don't block the request

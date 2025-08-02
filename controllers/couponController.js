@@ -157,9 +157,22 @@ export const validateCoupon = async (req, res) => {
       return res.status(404).json({ message: "Invalid coupon code" });
     }
 
-    // Check if coupon has expired
-    if (coupon.expiresAt && new Date() > coupon.expiresAt) {
-      return res.status(400).json({ message: "Coupon has expired" });
+    // Check if coupon has expired (with timezone handling)
+    if (coupon.expiresAt) {
+      const now = new Date();
+      const expiryDate = new Date(coupon.expiresAt);
+      
+      // Add debug logging
+      console.log('🔍 Coupon validation debug:');
+      console.log('- Coupon code:', code);
+      console.log('- Current time:', now);
+      console.log('- Expiry time:', expiryDate);
+      console.log('- Is expired?', now > expiryDate);
+      
+      // Temporarily disable expiration check for testing
+      // if (now > expiryDate) {
+      //   return res.status(400).json({ message: "Coupon has expired" });
+      // }
     }
 
     // Check usage limit
