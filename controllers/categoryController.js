@@ -17,7 +17,56 @@ export const getCarouselCategories = async (req, res) => {
       isActive: true,
       showInCarousel: true
     })
-    .sort({ carouselOrder: 1, createdAt: -1 });
+    .sort({ carouselOrder: 1, createdAt: -1 })
+    .limit(7); // Limit to first 7 for carousel
+    
+    res.json({ data: categories });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get categories for women section
+export const getWomenCategories = async (req, res) => {
+  try {
+    const categories = await Category.find({
+      isActive: true,
+      displaySection: 'women'
+    })
+    .sort({ sectionOrder: 1, createdAt: -1 })
+    .limit(4); // Limit to 4 for women section
+    
+    res.json({ data: categories });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get categories for men section
+export const getMenCategories = async (req, res) => {
+  try {
+    const categories = await Category.find({
+      isActive: true,
+      displaySection: 'men'
+    })
+    .sort({ sectionOrder: 1, createdAt: -1 })
+    .limit(4); // Limit to 4 for men section
+    
+    res.json({ data: categories });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get categories for training section
+export const getTrainingCategories = async (req, res) => {
+  try {
+    const categories = await Category.find({
+      isActive: true,
+      displaySection: 'training'
+    })
+    .sort({ sectionOrder: 1, createdAt: -1 })
+    .limit(4); // Limit to 4 for training section
     
     res.json({ data: categories });
   } catch (error) {
@@ -28,7 +77,18 @@ export const getCarouselCategories = async (req, res) => {
 // Create new category
 export const createCategory = async (req, res) => {
   try {
-    const { name, description, image, isActive, showInCarousel, carouselOrder, carouselImage } = req.body;
+    const { 
+      name, 
+      description, 
+      image, 
+      isActive, 
+      showInCarousel, 
+      carouselOrder, 
+      carouselImage,
+      discountPercentage,
+      displaySection,
+      sectionOrder
+    } = req.body;
     
     const category = new Category({
       name,
@@ -37,7 +97,10 @@ export const createCategory = async (req, res) => {
       isActive: isActive !== undefined ? isActive : true,
       showInCarousel: showInCarousel || false,
       carouselOrder: carouselOrder || 0,
-      carouselImage
+      carouselImage,
+      discountPercentage: discountPercentage || 0,
+      displaySection: displaySection || 'none',
+      sectionOrder: sectionOrder || 0
     });
     
     await category.save();

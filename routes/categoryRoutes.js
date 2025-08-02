@@ -3,6 +3,9 @@ import { authenticateToken, requireRole } from "../middleware/auth.js";
 import {
   getCategories,
   getCarouselCategories,
+  getWomenCategories,
+  getMenCategories,
+  getTrainingCategories,
   createCategory,
   updateCategory,
   deleteCategory,
@@ -14,6 +17,9 @@ const router = express.Router();
 
 // Public routes (no authentication required)
 router.get('/public/carousel', getCarouselCategories);
+router.get('/public/women', getWomenCategories);
+router.get('/public/men', getMenCategories);
+router.get('/public/training', getTrainingCategories);
 
 // Admin routes (require authentication)
 router.get('/', authenticateToken, requireRole(["admin", "manager"]), getCategories);
