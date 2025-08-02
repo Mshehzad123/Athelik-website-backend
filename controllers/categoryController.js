@@ -4,7 +4,24 @@ import Category from "../models/Category.js";
 export const getCategories = async (req, res) => {
   try {
     const categories = await Category.find().sort({ createdAt: -1 });
-    res.json({ data: categories });
+    
+    // Get the base URL for images
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Transform categories to include full image URLs
+    const transformedCategories = categories.map(category => ({
+      _id: category._id,
+      name: category.name,
+      description: category.description,
+      image: category.image ? `${baseUrl}${category.image}` : undefined,
+      carouselImage: category.carouselImage ? `${baseUrl}${category.carouselImage}` : undefined,
+      showInCarousel: category.showInCarousel,
+      carouselOrder: category.carouselOrder,
+      isActive: category.isActive,
+      createdAt: category.createdAt
+    }));
+    
+    res.json({ data: transformedCategories });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -19,7 +36,23 @@ export const getCarouselCategories = async (req, res) => {
     })
     .sort({ carouselOrder: 1, createdAt: -1 });
     
-    res.json({ data: categories });
+    // Get the base URL for images
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Transform categories to include full image URLs
+    const transformedCategories = categories.map(category => ({
+      _id: category._id,
+      name: category.name,
+      description: category.description,
+      image: category.image ? `${baseUrl}${category.image}` : undefined,
+      carouselImage: category.carouselImage ? `${baseUrl}${category.carouselImage}` : undefined,
+      showInCarousel: category.showInCarousel,
+      carouselOrder: category.carouselOrder,
+      isActive: category.isActive,
+      createdAt: category.createdAt
+    }));
+    
+    res.json({ data: transformedCategories });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -42,9 +75,25 @@ export const createCategory = async (req, res) => {
     
     await category.save();
     
+    // Get the base URL for images
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Transform category to include full image URLs
+    const transformedCategory = {
+      _id: category._id,
+      name: category.name,
+      description: category.description,
+      image: category.image ? `${baseUrl}${category.image}` : undefined,
+      carouselImage: category.carouselImage ? `${baseUrl}${category.carouselImage}` : undefined,
+      showInCarousel: category.showInCarousel,
+      carouselOrder: category.carouselOrder,
+      isActive: category.isActive,
+      createdAt: category.createdAt
+    };
+    
     res.status(201).json({
       message: "Category created successfully",
-      category
+      category: transformedCategory
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -67,9 +116,25 @@ export const updateCategory = async (req, res) => {
       return res.status(404).json({ message: "Category not found" });
     }
     
+    // Get the base URL for images
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Transform category to include full image URLs
+    const transformedCategory = {
+      _id: category._id,
+      name: category.name,
+      description: category.description,
+      image: category.image ? `${baseUrl}${category.image}` : undefined,
+      carouselImage: category.carouselImage ? `${baseUrl}${category.carouselImage}` : undefined,
+      showInCarousel: category.showInCarousel,
+      carouselOrder: category.carouselOrder,
+      isActive: category.isActive,
+      createdAt: category.createdAt
+    };
+    
     res.json({
       message: "Category updated successfully",
-      category
+      category: transformedCategory
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -116,9 +181,25 @@ export const toggleCarouselDisplay = async (req, res) => {
       return res.status(404).json({ message: "Category not found" });
     }
     
+    // Get the base URL for images
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Transform category to include full image URLs
+    const transformedCategory = {
+      _id: category._id,
+      name: category.name,
+      description: category.description,
+      image: category.image ? `${baseUrl}${category.image}` : undefined,
+      carouselImage: category.carouselImage ? `${baseUrl}${category.carouselImage}` : undefined,
+      showInCarousel: category.showInCarousel,
+      carouselOrder: category.carouselOrder,
+      isActive: category.isActive,
+      createdAt: category.createdAt
+    };
+    
     res.json({
       message: "Category carousel settings updated successfully",
-      category
+      category: transformedCategory
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

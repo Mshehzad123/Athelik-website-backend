@@ -15,8 +15,8 @@ async function seedCategories() {
       {
         name: "LEGGINGS",
         description: "Comfortable and stylish leggings for all activities",
-        image: "https://images.unsplash.com/photo-1544966503-7cc5ac882d5f?w=400&h=600&fit=crop",
-        carouselImage: "https://images.unsplash.com/photo-1544966503-7cc5ac882d5f?w=400&h=600&fit=crop",
+        image: "/uploads/image-1753953903845-461782230.jpeg",
+        carouselImage: "/uploads/image-1753953903845-461782230.jpeg",
         isActive: true,
         showInCarousel: true,
         carouselOrder: 1
@@ -24,8 +24,8 @@ async function seedCategories() {
       {
         name: "T-SHIRTS",
         description: "Premium quality t-shirts for everyday wear",
-        image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=600&fit=crop",
-        carouselImage: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=600&fit=crop",
+        image: "/uploads/image-1753953941777-669249731.jpeg",
+        carouselImage: "/uploads/image-1753953941777-669249731.jpeg",
         isActive: true,
         showInCarousel: true,
         carouselOrder: 2
@@ -33,8 +33,8 @@ async function seedCategories() {
       {
         name: "NEW ARRIVAL",
         description: "Latest arrivals and trending styles",
-        image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=600&fit=crop",
-        carouselImage: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=600&fit=crop",
+        image: "/uploads/image-1753954023102-407874072.jpeg",
+        carouselImage: "/uploads/image-1753954023102-407874072.jpeg",
         isActive: true,
         showInCarousel: true,
         carouselOrder: 3
@@ -42,8 +42,8 @@ async function seedCategories() {
       {
         name: "SHORTS",
         description: "Comfortable shorts for sports and casual wear",
-        image: "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=400&h=600&fit=crop",
-        carouselImage: "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=400&h=600&fit=crop",
+        image: "/uploads/image-1753954047209-106662341.jpeg",
+        carouselImage: "/uploads/image-1753954047209-106662341.jpeg",
         isActive: true,
         showInCarousel: true,
         carouselOrder: 4
@@ -51,8 +51,8 @@ async function seedCategories() {
       {
         name: "YOGA WEAR",
         description: "Flexible and breathable yoga clothing",
-        image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=600&fit=crop",
-        carouselImage: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=600&fit=crop",
+        image: "/uploads/image-1753954093474-415346334.jpeg",
+        carouselImage: "/uploads/image-1753954093474-415346334.jpeg",
         isActive: true,
         showInCarousel: true,
         carouselOrder: 5
