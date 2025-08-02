@@ -61,6 +61,14 @@ const orderSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  bundleDiscount: {
+    type: Number,
+    default: 0,
+  },
+  appliedBundle: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Bundle",
+  },
   shippingCost: {
     type: Number,
     required: true,
@@ -97,7 +105,5 @@ const orderSchema = new mongoose.Schema({
 }, {
   timestamps: true,
 });
-
-
 
 export default mongoose.model("Order", orderSchema); 

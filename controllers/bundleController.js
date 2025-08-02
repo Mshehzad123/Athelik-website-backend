@@ -4,7 +4,20 @@ import Bundle from "../models/Bundle.js";
 export const getBundles = async (req, res) => {
   try {
     const bundles = await Bundle.find().populate("products");
-    res.json(bundles);
+    res.json({ data: bundles });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get bundle by ID
+export const getBundleById = async (req, res) => {
+  try {
+    const bundle = await Bundle.findById(req.params.id).populate("products");
+    if (!bundle) {
+      return res.status(404).json({ error: "Bundle not found" });
+    }
+    res.json({ data: bundle });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -13,9 +26,147 @@ export const getBundles = async (req, res) => {
 // Create new bundle
 export const createBundle = async (req, res) => {
   try {
-    const bundle = new Bundle(req.body);
+    const bundleData = req.body;
+    
+    // Calculate original price from products if not provided
+    if (!bundleData.originalPrice && bundleData.products && bundleData.products.length > 0) {
+      const Product = (await import("../models/Product.js")).default;
+      const products = await Product.find({ _id: { $in: bundleData.products } });
+      bundleData.originalPrice = products.reduce((sum, product) => sum + product.basePrice, 0);
+    }
+    
+    const bundle = new Bundle(bundleData);
     await bundle.save();
-    res.status(201).json(bundle);
+    
+    const populatedBundle = await Bundle.findById(bundle._id).populate("products");
+    res.status(201).json({ data: populatedBundle });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Update bundle
+export const updateBundle = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    // Calculate original price from products if not provided
+    if (!updateData.originalPrice && updateData.products && updateData.products.length > 0) {
+      const Product = (await import("../models/Product.js")).default;
+      const products = await Product.find({ _id: { $in: updateData.products } });
+      updateData.originalPrice = products.reduce((sum, product) => sum + product.basePrice, 0);
+    }
+    
+    const bundle = await Bundle.findByIdAndUpdate(id, updateData, { new: true }).populate("products");
+    
+    if (!bundle) {
+      return res.status(404).json({ error: "Bundle not found" });
+    }
+    
+    res.json({ data: bundle });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Delete bundle
+export const deleteBundle = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const bundle = await Bundle.findByIdAndDelete(id);
+    
+    if (!bundle) {
+      return res.status(404).json({ error: "Bundle not found" });
+    }
+    
+    res.json({ message: "Bundle deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get active bundles (for public website)
+export const getActiveBundles = async (req, res) => {
+  try {
+    const now = new Date();
+    const bundles = await Bundle.find({
+      isActive: true,
+      $or: [
+        { startDate: { $exists: false } },
+        { startDate: { $lte: now } }
+      ],
+      $or: [
+        { endDate: { $exists: false } },
+        { endDate: { $gte: now } }
+      ]
+    }).populate("products");
+    
+    res.json({ data: bundles });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Calculate bundle discount for cart items
+export const calculateBundleDiscount = async (req, res) => {
+  try {
+    const { cartItems } = req.body;
+    
+    if (!cartItems || !Array.isArray(cartItems)) {
+      return res.status(400).json({ error: "Cart items are required" });
+    }
+    
+    // Get all active bundles
+    const now = new Date();
+    const bundles = await Bundle.find({
+      isActive: true,
+      $or: [
+        { startDate: { $exists: false } },
+        { startDate: { $lte: now } }
+      ],
+      $or: [
+        { endDate: { $exists: false } },
+        { endDate: { $gte: now } }
+      ]
+    }).populate("products");
+    
+    let bestDiscount = null;
+    let appliedBundle = null;
+    
+    // Check each bundle
+    for (const bundle of bundles) {
+      const bundleProductIds = bundle.products.map(p => p._id.toString());
+      const cartProductIds = cartItems.map(item => item.productId);
+      
+      // Check if all bundle products are in cart
+      const hasAllBundleProducts = bundleProductIds.every(id => 
+        cartProductIds.includes(id)
+      );
+      
+      if (hasAllBundleProducts) {
+        // Calculate potential savings
+        const bundleTotal = bundle.bundlePrice;
+        const individualTotal = cartItems
+          .filter(item => bundleProductIds.includes(item.productId))
+          .reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        
+        const savings = individualTotal - bundleTotal;
+        
+        if (savings > 0 && (!bestDiscount || savings > bestDiscount)) {
+          bestDiscount = savings;
+          appliedBundle = bundle;
+        }
+      }
+    }
+    
+    res.json({
+      hasBundleDiscount: !!appliedBundle,
+      bundle: appliedBundle,
+      discountAmount: bestDiscount || 0,
+      discountPercentage: appliedBundle ? 
+        Math.round(((bestDiscount / appliedBundle.originalPrice) * 100)) : 0
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

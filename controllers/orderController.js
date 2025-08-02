@@ -1,10 +1,97 @@
 import Order from "../models/Order.js";
 import Product from "../models/Product.js";
+import Bundle from "../models/Bundle.js";
+import ShippingRule from "../models/ShippingRule.js";
 import { createTransporter } from "../utils/emailService.js";
 
-// Calculate shipping cost based on order total
-const calculateShipping = (subtotal) => {
-  return subtotal >= 500 ? 0 : 20; // Free shipping for orders ≥ $500
+// Calculate shipping cost based on shipping rules
+const calculateShipping = async (subtotal, region = 'US') => {
+  try {
+    // Find applicable shipping rules
+    const applicableRules = await ShippingRule.find({
+      isActive: true,
+      region: { $in: [region, 'GLOBAL'] },
+      minOrderAmount: { $lte: subtotal },
+      maxOrderAmount: { $gte: subtotal }
+    }).sort({ priority: 1 });
+
+    if (applicableRules.length === 0) {
+      return { shippingCost: 20, isFreeShipping: false }; // Default fallback
+    }
+
+    // Use the highest priority rule
+    const selectedRule = applicableRules[0];
+    const isFreeShipping = subtotal >= selectedRule.freeShippingAt;
+    const shippingCost = isFreeShipping ? 0 : selectedRule.shippingCost;
+
+    return { shippingCost, isFreeShipping };
+  } catch (error) {
+    console.error("Error calculating shipping:", error);
+    return { shippingCost: 20, isFreeShipping: false }; // Default fallback
+  }
+};
+
+// Calculate bundle discount for cart items
+const calculateBundleDiscount = async (cartItems) => {
+  try {
+    const now = new Date();
+    const bundles = await Bundle.find({
+      isActive: true,
+      $or: [
+        { startDate: { $exists: false } },
+        { startDate: { $lte: now } }
+      ],
+      $or: [
+        { endDate: { $exists: false } },
+        { endDate: { $gte: now } }
+      ]
+    }).populate("products");
+    
+    let bestDiscount = 0;
+    let appliedBundle = null;
+    
+    // Check each bundle
+    for (const bundle of bundles) {
+      const bundleProductIds = bundle.products.map(p => p._id.toString());
+      const cartProductIds = cartItems.map(item => item.productId);
+      
+      // Check if all bundle products are in cart
+      const hasAllBundleProducts = bundleProductIds.every(id => 
+        cartProductIds.includes(id)
+      );
+      
+      if (hasAllBundleProducts) {
+        // Calculate potential savings
+        const bundleTotal = bundle.bundlePrice;
+        const individualTotal = cartItems
+          .filter(item => bundleProductIds.includes(item.productId))
+          .reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        
+        const savings = individualTotal - bundleTotal;
+        
+        if (savings > 0 && savings > bestDiscount) {
+          bestDiscount = savings;
+          appliedBundle = bundle;
+        }
+      }
+    }
+    
+    return {
+      hasBundleDiscount: !!appliedBundle,
+      bundle: appliedBundle,
+      discountAmount: bestDiscount,
+      discountPercentage: appliedBundle ? 
+        Math.round(((bestDiscount / appliedBundle.originalPrice) * 100)) : 0
+    };
+  } catch (error) {
+    console.error("Error calculating bundle discount:", error);
+    return {
+      hasBundleDiscount: false,
+      bundle: null,
+      discountAmount: 0,
+      discountPercentage: 0
+    };
+  }
 };
 
 // Send order confirmation email
@@ -43,6 +130,7 @@ const sendOrderConfirmationEmail = async (order) => {
           
           <div style="background: #f0f0f0; padding: 15px; border-radius: 5px;">
             <p><strong>Subtotal:</strong> $${order.subtotal}</p>
+            ${order.bundleDiscount > 0 ? `<p><strong>Bundle Discount:</strong> -$${order.bundleDiscount}</p>` : ''}
             <p><strong>Shipping:</strong> $${order.shippingCost}</p>
             <p><strong>Total:</strong> $${order.total}</p>
           </div>
@@ -129,9 +217,14 @@ export const createOrder = async (req, res) => {
       }
     }
 
+    // Calculate bundle discount
+    const bundleDiscountInfo = await calculateBundleDiscount(items);
+    const bundleDiscount = bundleDiscountInfo.discountAmount;
+
     // Calculate shipping
-    const shippingCost = calculateShipping(subtotal);
-    const total = subtotal + shippingCost;
+    const shippingInfo = await calculateShipping(subtotal - bundleDiscount);
+    const shippingCost = shippingInfo.shippingCost;
+    const total = subtotal - bundleDiscount + shippingCost;
 
     // Generate order number
     const orderCount = await Order.countDocuments();
@@ -143,6 +236,8 @@ export const createOrder = async (req, res) => {
       customer,
       items: orderItems,
       subtotal,
+      bundleDiscount,
+      appliedBundle: bundleDiscountInfo.bundle ? bundleDiscountInfo.bundle._id : null,
       shippingCost,
       total,
       notes,
@@ -166,7 +261,8 @@ export const createOrder = async (req, res) => {
       success: true,
       message: "Order created successfully",
       data: order,
-      emailSent: emailSent
+      emailSent: emailSent,
+      bundleDiscount: bundleDiscountInfo
     });
   } catch (error) {
     console.error("Error creating order:", error);

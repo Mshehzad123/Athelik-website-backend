@@ -2,13 +2,25 @@ import express from "express";
 import { authenticateToken, requireRole } from "../middleware/auth.js";
 import {
   getBundles,
-  createBundle
+  getBundleById,
+  createBundle,
+  updateBundle,
+  deleteBundle,
+  getActiveBundles,
+  calculateBundleDiscount
 } from "../controllers/bundleController.js";
 
 const router = express.Router();
 
-// Bundle routes
+// Admin bundle routes (require authentication)
 router.get('/', authenticateToken, getBundles);
+router.get('/:id', authenticateToken, getBundleById);
 router.post('/', authenticateToken, requireRole(["admin", "manager"]), createBundle);
+router.put('/:id', authenticateToken, requireRole(["admin", "manager"]), updateBundle);
+router.delete('/:id', authenticateToken, requireRole(["admin", "manager"]), deleteBundle);
+
+// Public bundle routes (no authentication required)
+router.get('/public/active', getActiveBundles);
+router.post('/public/calculate-discount', calculateBundleDiscount);
 
 export default router; 
