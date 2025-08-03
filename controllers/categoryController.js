@@ -98,6 +98,8 @@ export const getCarouselCategories = async (req, res) => {
       carouselImage: category.carouselImage ? `${baseUrl}${category.carouselImage}` : undefined,
       showInCarousel: category.showInCarousel,
       carouselOrder: category.carouselOrder,
+      displaySection: category.displaySection,
+      sectionOrder: category.sectionOrder,
       isActive: category.isActive,
       createdAt: category.createdAt
     }));
@@ -118,7 +120,24 @@ export const getWomenCategories = async (req, res) => {
     .sort({ sectionOrder: 1, createdAt: -1 })
     .limit(4); // Limit to 4 for women section
     
-    res.json({ data: categories });
+    // Get the base URL for images
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Transform categories to include full image URLs
+    const transformedCategories = categories.map(category => ({
+      _id: category._id,
+      name: category.name,
+      description: category.description,
+      image: category.image ? `${baseUrl}${category.image}` : undefined,
+      carouselImage: category.carouselImage ? `${baseUrl}${category.carouselImage}` : undefined,
+      discountPercentage: category.discountPercentage,
+      displaySection: category.displaySection,
+      sectionOrder: category.sectionOrder,
+      isActive: category.isActive,
+      createdAt: category.createdAt
+    }));
+    
+    res.json({ data: transformedCategories });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -134,7 +153,24 @@ export const getMenCategories = async (req, res) => {
     .sort({ sectionOrder: 1, createdAt: -1 })
     .limit(4); // Limit to 4 for men section
     
-    res.json({ data: categories });
+    // Get the base URL for images
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Transform categories to include full image URLs
+    const transformedCategories = categories.map(category => ({
+      _id: category._id,
+      name: category.name,
+      description: category.description,
+      image: category.image ? `${baseUrl}${category.image}` : undefined,
+      carouselImage: category.carouselImage ? `${baseUrl}${category.carouselImage}` : undefined,
+      discountPercentage: category.discountPercentage,
+      displaySection: category.displaySection,
+      sectionOrder: category.sectionOrder,
+      isActive: category.isActive,
+      createdAt: category.createdAt
+    }));
+    
+    res.json({ data: transformedCategories });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

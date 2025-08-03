@@ -90,6 +90,94 @@ const testProducts = [
     ],
     defaultVariant: "variant-M-Black-1",
     images: ["/uploads/test-product-2.jpg"]
+  },
+  {
+    title: "Performance Tank Top - Black",
+    basePrice: 25.00,
+    baseSku: "TANK-BLACK-001",
+    category: "Men",
+    subCategory: "Tanks",
+    description: "Lightweight and breathable tank top perfect for intense workouts and training sessions.",
+    isActive: true,
+    sizeOptions: ["S", "M", "L", "XL", "XXL"],
+    colorOptions: [
+      {
+        name: "Black",
+        type: "hex",
+        value: "#000000"
+      },
+      {
+        name: "Navy",
+        type: "hex",
+        value: "#1a237e"
+      }
+    ],
+    variants: [
+      {
+        id: "variant-M-Black-1",
+        size: "M",
+        color: {
+          name: "Black",
+          type: "hex",
+          value: "#000000"
+        },
+        sku: "TANK-BLACK-001-M",
+        stock: 15,
+        isActive: true
+      },
+      {
+        id: "variant-L-Black-1",
+        size: "L",
+        color: {
+          name: "Black",
+          type: "hex",
+          value: "#000000"
+        },
+        sku: "TANK-BLACK-001-L",
+        stock: 12,
+        isActive: true
+      }
+    ],
+    defaultVariant: "variant-M-Black-1",
+    images: ["/uploads/test-product-3.jpg"]
+  },
+  {
+    title: "Athletic Tank Top - Grey",
+    basePrice: 28.00,
+    baseSku: "TANK-GREY-001",
+    category: "Men",
+    subCategory: "Tanks",
+    description: "Comfortable athletic tank top with moisture-wicking technology for optimal performance.",
+    isActive: true,
+    sizeOptions: ["S", "M", "L", "XL"],
+    colorOptions: [
+      {
+        name: "Grey",
+        type: "hex",
+        value: "#9e9e9e"
+      },
+      {
+        name: "White",
+        type: "hex",
+        value: "#ffffff"
+      }
+    ],
+    variants: [
+      {
+        id: "variant-M-Grey-1",
+        size: "M",
+        color: {
+          name: "Grey",
+          type: "hex",
+          value: "#9e9e9e"
+        },
+        sku: "TANK-GREY-001-M",
+        stock: 18,
+        isActive: true
+      }
+    ],
+    defaultVariant: "variant-M-Grey-1",
+    images: ["/uploads/test-product-4.jpg"]
   }
 ];
 
