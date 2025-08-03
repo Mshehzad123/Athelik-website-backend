@@ -82,8 +82,8 @@ export const getPublicProducts = async (req, res) => {
       id: product._id,
       name: product.title,
       price: `$${product.basePrice.toFixed(2)}`,
-      originalPrice: product.variants.find(v => v.priceOverride) ? 
-        `$${product.variants.find(v => v.priceOverride).priceOverride.toFixed(2)}` : undefined,
+      originalPrice: product.discountPercentage > 0 ? 
+        `$${product.basePrice.toFixed(2)}` : undefined,
       image: product.images && product.images.length > 0 ? 
         `${baseUrl}${product.images[0]}` : "/placeholder.svg?height=400&width=300",
       images: product.images ? product.images.map(img => `${baseUrl}${img}`) : [],
@@ -91,7 +91,8 @@ export const getPublicProducts = async (req, res) => {
       subCategory: product.subCategory,
       collectionType: product.collectionType,
       description: product.description,
-      isOnSale: product.variants.some(v => v.priceOverride && v.priceOverride < product.basePrice),
+      discountPercentage: product.discountPercentage || 0,
+      isOnSale: product.discountPercentage > 0,
       colors: product.colorOptions.map(color => ({
         name: color.name,
         hex: color.type === 'hex' ? color.value : undefined,
@@ -166,8 +167,8 @@ export const getPublicProduct = async (req, res) => {
       id: product._id,
       name: product.title,
       price: `$${product.basePrice.toFixed(2)}`,
-      originalPrice: product.variants.find(v => v.priceOverride) ? 
-        `$${product.variants.find(v => v.priceOverride).priceOverride.toFixed(2)}` : undefined,
+      originalPrice: product.discountPercentage > 0 ? 
+        `$${product.basePrice.toFixed(2)}` : undefined,
       image: product.images && product.images.length > 0 ? 
         `${baseUrl}${product.images[0]}` : "/placeholder.svg?height=400&width=300",
       images: product.images ? product.images.map(img => `${baseUrl}${img}`) : [],
@@ -175,7 +176,12 @@ export const getPublicProduct = async (req, res) => {
       subCategory: product.subCategory,
       description: product.description,
       fullDescription: product.description,
-      isOnSale: product.variants.some(v => v.priceOverride && v.priceOverride < product.basePrice),
+      discountPercentage: product.discountPercentage || 0,
+      isOnSale: product.discountPercentage > 0,
+      purpose: product.purpose,
+      features: product.features,
+      materials: product.materials,
+      care: product.care,
       colors: product.colorOptions.map(color => ({
         name: color.name,
         hex: color.type === 'hex' ? color.value : undefined,
@@ -184,7 +190,7 @@ export const getPublicProduct = async (req, res) => {
       sizes: product.sizeOptions,
       variants: product.variants,
       defaultVariant: product.defaultVariant,
-      rating: 4.8, // Default rating for now
+      rating: product.reviewRating || 4.8,
       reviewCount: 0 // Default review count for now
     };
     
@@ -212,6 +218,12 @@ export const createProduct = async (req, res) => {
       category,
       subCategory,
       description,
+      discountPercentage,
+      purpose,
+      features,
+      materials,
+      care,
+      reviewRating,
       isActive,
       sizeOptions,
       colorOptions,
@@ -267,6 +279,12 @@ export const createProduct = async (req, res) => {
       category,
       subCategory,
       description,
+      discountPercentage: discountPercentage ? parseFloat(discountPercentage) : 0,
+      purpose,
+      features,
+      materials,
+      care,
+      reviewRating: reviewRating ? parseFloat(reviewRating) : 5,
       isActive: isActive !== undefined ? isActive : true,
       sizeOptions,
       colorOptions,

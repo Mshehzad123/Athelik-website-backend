@@ -19,6 +19,7 @@ import settingsRoutes from "./routes/settingsRoutes.js";
 import customerRoutes from "./routes/customerRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
+import subCategoryRoutes from "./routes/subCategoryRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 
 // Import middleware
@@ -78,6 +79,7 @@ app.use("/api/settings", settingsRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/categories", categoryRoutes);
+app.use("/api/subcategories", subCategoryRoutes);
 app.use("/api/upload", uploadRoutes);
 
 // Public product routes (no authentication required)

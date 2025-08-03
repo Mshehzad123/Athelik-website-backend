@@ -12,50 +12,95 @@ async function seedCategories() {
     console.log('🗑️ Cleared existing categories');
 
     const sampleCategories = [
+      // Men's Categories
       {
-        name: "LEGGINGS",
-        description: "Comfortable and stylish leggings for all activities",
+        name: "T-Shirts",
+        description: "Comfortable and stylish t-shirts for men",
         image: "/uploads/image-1753953903845-461782230.jpeg",
         carouselImage: "/uploads/image-1753953903845-461782230.jpeg",
         isActive: true,
         showInCarousel: true,
-        carouselOrder: 1
+        carouselOrder: 1,
+        displaySection: "men",
+        sectionOrder: 1
       },
       {
-        name: "T-SHIRTS",
-        description: "Premium quality t-shirts for everyday wear",
+        name: "Shorts",
+        description: "Comfortable shorts for sports and casual wear",
         image: "/uploads/image-1753953941777-669249731.jpeg",
         carouselImage: "/uploads/image-1753953941777-669249731.jpeg",
         isActive: true,
         showInCarousel: true,
-        carouselOrder: 2
+        carouselOrder: 2,
+        displaySection: "men",
+        sectionOrder: 2
       },
       {
-        name: "NEW ARRIVAL",
-        description: "Latest arrivals and trending styles",
+        name: "Hoodies",
+        description: "Warm and comfortable hoodies for men",
         image: "/uploads/image-1753954023102-407874072.jpeg",
         carouselImage: "/uploads/image-1753954023102-407874072.jpeg",
         isActive: true,
         showInCarousel: true,
-        carouselOrder: 3
+        carouselOrder: 3,
+        displaySection: "men",
+        sectionOrder: 3
       },
       {
-        name: "SHORTS",
-        description: "Comfortable shorts for sports and casual wear",
+        name: "Trousers",
+        description: "Comfortable trousers for men",
         image: "/uploads/image-1753954047209-106662341.jpeg",
         carouselImage: "/uploads/image-1753954047209-106662341.jpeg",
         isActive: true,
         showInCarousel: true,
-        carouselOrder: 4
+        carouselOrder: 4,
+        displaySection: "men",
+        sectionOrder: 4
       },
+      // Women's Categories
       {
-        name: "YOGA WEAR",
-        description: "Flexible and breathable yoga clothing",
+        name: "Leggings",
+        description: "Comfortable and stylish leggings for women",
         image: "/uploads/image-1753954093474-415346334.jpeg",
         carouselImage: "/uploads/image-1753954093474-415346334.jpeg",
         isActive: true,
         showInCarousel: true,
-        carouselOrder: 5
+        carouselOrder: 5,
+        displaySection: "women",
+        sectionOrder: 1
+      },
+      {
+        name: "Tops",
+        description: "Stylish tops for women",
+        image: "/uploads/image-1753953903845-461782230.jpeg",
+        carouselImage: "/uploads/image-1753953903845-461782230.jpeg",
+        isActive: true,
+        showInCarousel: true,
+        carouselOrder: 6,
+        displaySection: "women",
+        sectionOrder: 2
+      },
+      {
+        name: "Dresses",
+        description: "Elegant dresses for women",
+        image: "/uploads/image-1753953941777-669249731.jpeg",
+        carouselImage: "/uploads/image-1753953941777-669249731.jpeg",
+        isActive: true,
+        showInCarousel: true,
+        carouselOrder: 7,
+        displaySection: "women",
+        sectionOrder: 3
+      },
+      {
+        name: "Skirts",
+        description: "Comfortable skirts for women",
+        image: "/uploads/image-1753954023102-407874072.jpeg",
+        carouselImage: "/uploads/image-1753954023102-407874072.jpeg",
+        isActive: true,
+        showInCarousel: true,
+        carouselOrder: 8,
+        displaySection: "women",
+        sectionOrder: 4
       }
     ];
 
@@ -65,7 +110,19 @@ async function seedCategories() {
     const carouselCategories = await Category.find({ showInCarousel: true }).sort({ carouselOrder: 1 });
     console.log('\n🎠 Carousel Categories:');
     carouselCategories.forEach((cat, index) => {
-      console.log(`${index + 1}. ${cat.name} (Order: ${cat.carouselOrder})`);
+      console.log(`${index + 1}. ${cat.name} (Order: ${cat.carouselOrder}, Section: ${cat.displaySection})`);
+    });
+
+    const menCategories = await Category.find({ displaySection: 'men', isActive: true }).sort({ sectionOrder: 1 });
+    console.log('\n👨 Men Categories:');
+    menCategories.forEach((cat, index) => {
+      console.log(`${index + 1}. ${cat.name} (Order: ${cat.sectionOrder})`);
+    });
+
+    const womenCategories = await Category.find({ displaySection: 'women', isActive: true }).sort({ sectionOrder: 1 });
+    console.log('\n👩 Women Categories:');
+    womenCategories.forEach((cat, index) => {
+      console.log(`${index + 1}. ${cat.name} (Order: ${cat.sectionOrder})`);
     });
 
   } catch (error) {

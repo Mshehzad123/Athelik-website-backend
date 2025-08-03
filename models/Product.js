@@ -103,6 +103,34 @@ const productSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  discountPercentage: {
+    type: Number,
+    min: 0,
+    max: 100,
+    default: 0
+  },
+  purpose: {
+    type: String,
+    trim: true
+  },
+  features: {
+    type: String,
+    trim: true
+  },
+  materials: {
+    type: String,
+    trim: true
+  },
+  care: {
+    type: String,
+    trim: true
+  },
+  reviewRating: {
+    type: Number,
+    min: 1,
+    max: 5,
+    default: 5
+  },
   images: [{
     type: String,
     required: true
