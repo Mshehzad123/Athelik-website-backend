@@ -7,6 +7,7 @@ import {
   updateBundle,
   deleteBundle,
   getActiveBundles,
+  getActiveBundlesByCategory,
   calculateBundleDiscount
 } from "../controllers/bundleController.js";
 
@@ -21,6 +22,7 @@ router.delete('/:id', authenticateToken, requireRole(["admin", "manager"]), dele
 
 // Public bundle routes (no authentication required)
 router.get('/public/active', getActiveBundles);
+router.get('/public/active/:category', getActiveBundlesByCategory);
 router.post('/public/calculate-discount', calculateBundleDiscount);
 
 export default router; 

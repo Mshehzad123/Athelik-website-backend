@@ -1,30 +1,60 @@
-import mongoose from "mongoose";
-import Product from "./models/Product.js";
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import Product from './models/Product.js';
 
-// Connect to database
-mongoose.connect("mongodb://localhost:27017/ecommerce_admin", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+dotenv.config();
 
 async function checkProducts() {
   try {
-    const products = await Product.find({});
-    console.log(`Found ${products.length} products in database:`);
+    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/ecommerce_admin');
+    console.log('✅ Connected to MongoDB');
     
-    products.forEach((product, index) => {
-      console.log(`\nProduct ${index + 1}:`);
-      console.log(`- Title: ${product.title}`);
-      console.log(`- SKU: ${product.baseSku}`);
-      console.log(`- Active: ${product.isActive}`);
-      console.log(`- Images: ${product.images.join(', ')}`);
-      console.log(`- Category: ${product.category}`);
+    const products = await Product.find({}, 'title collectionType basePrice _id');
+    console.log('\n📦 Products with collectionType:');
+    console.log('='.repeat(80));
+    
+    const menProducts = [];
+    const womenProducts = [];
+    const otherProducts = [];
+    
+    products.forEach(p => {
+      console.log(`${p.title} - ${p.collectionType} - $${p.basePrice} - ID: ${p._id}`);
+      
+      if (p.collectionType === 'men') {
+        menProducts.push(p);
+      } else if (p.collectionType === 'women') {
+        womenProducts.push(p);
+      } else {
+        otherProducts.push(p);
+      }
     });
     
-    process.exit(0);
+    console.log('\n📊 Summary:');
+    console.log(`Men's products: ${menProducts.length}`);
+    console.log(`Women's products: ${womenProducts.length}`);
+    console.log(`Other products: ${otherProducts.length}`);
+    console.log(`Total products: ${products.length}`);
+    
+    if (menProducts.length > 0) {
+      console.log('\n👨 Men\'s Products (first 6):');
+      menProducts.slice(0, 6).forEach(p => console.log(`  - ${p.title} (${p._id})`));
+    }
+    
+    if (womenProducts.length > 0) {
+      console.log('\n👩 Women\'s Products (first 6):');
+      womenProducts.slice(0, 6).forEach(p => console.log(`  - ${p.title} (${p._id})`));
+    }
+    
+    if (otherProducts.length > 0) {
+      console.log('\n🔍 Other Products:');
+      otherProducts.forEach(p => console.log(`  - ${p.title} (${p.collectionType})`));
+    }
+    
   } catch (error) {
-    console.error("Error checking products:", error);
-    process.exit(1);
+    console.error('❌ Error:', error.message);
+  } finally {
+    await mongoose.connection.close();
+    console.log('\n✅ Database connection closed');
   }
 }
 

@@ -84,7 +84,41 @@ export const calculateShipping = async (req, res) => {
     }).sort({ priority: 1 });
 
     if (applicableRules.length === 0) {
-      return res.status(404).json({ error: "No applicable shipping rules found" });
+      // Try to find any active rule for the region
+      const anyActiveRule = await ShippingRule.findOne({
+        isActive: true,
+        region: { $in: [region, 'GLOBAL'] }
+      }).sort({ priority: 1 });
+
+      if (anyActiveRule) {
+        const isFreeShipping = subtotal >= anyActiveRule.freeShippingAt;
+        const shippingCost = isFreeShipping ? 0 : anyActiveRule.shippingCost;
+        
+        return res.json({
+          shippingCost,
+          isFreeShipping,
+          deliveryDays: anyActiveRule.deliveryDays,
+          rule: {
+            name: anyActiveRule.name,
+            region: anyActiveRule.region,
+            freeShippingAt: anyActiveRule.freeShippingAt
+          },
+          remainingForFreeShipping: isFreeShipping ? 0 : anyActiveRule.freeShippingAt - subtotal
+        });
+      } else {
+        // Fallback to default values if no rules exist
+        return res.json({
+          shippingCost: subtotal >= 100 ? 0 : 10,
+          isFreeShipping: subtotal >= 100,
+          deliveryDays: 3,
+          rule: {
+            name: "Default Shipping",
+            region: "US",
+            freeShippingAt: 100
+          },
+          remainingForFreeShipping: subtotal >= 100 ? 0 : 100 - subtotal
+        });
+      }
     }
 
     // Use the highest priority rule (lowest number = highest priority)

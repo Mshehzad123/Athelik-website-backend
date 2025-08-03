@@ -14,6 +14,16 @@ const bundleSchema = new mongoose.Schema({
     type: Number, 
     required: true 
   },
+  bundleType: {
+    type: String,
+    enum: ['4-products', '6-products'],
+    required: true
+  },
+  category: {
+    type: String,
+    enum: ['men', 'women'],
+    required: true
+  },
   startDate: Date,
   endDate: Date,
   isActive: { 

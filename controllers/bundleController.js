@@ -28,12 +28,39 @@ export const createBundle = async (req, res) => {
   try {
     const bundleData = req.body;
     
+    // Validate product count (must be 4 or 6)
+    if (!bundleData.products || (bundleData.products.length !== 4 && bundleData.products.length !== 6)) {
+      return res.status(400).json({ 
+        error: "Bundle must contain exactly 4 or 6 products" 
+      });
+    }
+    
+    // Validate that all products are from the same category
+    const Product = (await import("../models/Product.js")).default;
+    const products = await Product.find({ _id: { $in: bundleData.products } });
+    
+    if (products.length !== bundleData.products.length) {
+      return res.status(400).json({ 
+        error: "Some products not found" 
+      });
+    }
+    
+    // Check if all products are from the same category (men/women)
+    const categories = [...new Set(products.map(p => p.category))];
+    if (categories.length > 1 || !['Men', 'Women'].includes(categories[0])) {
+      return res.status(400).json({ 
+        error: "All products in a bundle must be from the same category (Men or Women)" 
+      });
+    }
+    
     // Calculate original price from products if not provided
-    if (!bundleData.originalPrice && bundleData.products && bundleData.products.length > 0) {
-      const Product = (await import("../models/Product.js")).default;
-      const products = await Product.find({ _id: { $in: bundleData.products } });
+    if (!bundleData.originalPrice) {
       bundleData.originalPrice = products.reduce((sum, product) => sum + product.basePrice, 0);
     }
+    
+    // Add bundle type based on product count
+    bundleData.bundleType = bundleData.products.length === 4 ? '4-products' : '6-products';
+    bundleData.category = categories[0].toLowerCase(); // Store the category as lowercase for consistency
     
     const bundle = new Bundle(bundleData);
     await bundle.save();
@@ -50,6 +77,37 @@ export const updateBundle = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
+    
+    // Validate product count (must be 4 or 6) if products are being updated
+    if (updateData.products && (updateData.products.length !== 4 && updateData.products.length !== 6)) {
+      return res.status(400).json({ 
+        error: "Bundle must contain exactly 4 or 6 products" 
+      });
+    }
+    
+    // Validate that all products are from the same category if products are being updated
+    if (updateData.products) {
+      const Product = (await import("../models/Product.js")).default;
+      const products = await Product.find({ _id: { $in: updateData.products } });
+      
+      if (products.length !== updateData.products.length) {
+        return res.status(400).json({ 
+          error: "Some products not found" 
+        });
+      }
+      
+      // Check if all products are from the same category (men/women)
+      const categories = [...new Set(products.map(p => p.category))];
+      if (categories.length > 1 || !['Men', 'Women'].includes(categories[0])) {
+        return res.status(400).json({ 
+          error: "All products in a bundle must be from the same category (Men or Women)" 
+        });
+      }
+      
+      // Add bundle type based on product count
+      updateData.bundleType = updateData.products.length === 4 ? '4-products' : '6-products';
+      updateData.category = categories[0]; // Store the category
+    }
     
     // Calculate original price from products if not provided
     if (!updateData.originalPrice && updateData.products && updateData.products.length > 0) {
@@ -92,6 +150,35 @@ export const getActiveBundles = async (req, res) => {
     const now = new Date();
     const bundles = await Bundle.find({
       isActive: true,
+      $or: [
+        { startDate: { $exists: false } },
+        { startDate: { $lte: now } }
+      ],
+      $or: [
+        { endDate: { $exists: false } },
+        { endDate: { $gte: now } }
+      ]
+    }).populate("products");
+    
+    res.json({ data: bundles });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get active bundles by category (for public website)
+export const getActiveBundlesByCategory = async (req, res) => {
+  try {
+    const { category } = req.params;
+    
+    if (!['men', 'women'].includes(category)) {
+      return res.status(400).json({ error: "Category must be 'men' or 'women'" });
+    }
+    
+    const now = new Date();
+    const bundles = await Bundle.find({
+      isActive: true,
+      category: category,
       $or: [
         { startDate: { $exists: false } },
         { startDate: { $lte: now } }
