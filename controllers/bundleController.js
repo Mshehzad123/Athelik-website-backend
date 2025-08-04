@@ -4,7 +4,19 @@ import Bundle from "../models/Bundle.js";
 export const getBundles = async (req, res) => {
   try {
     const bundles = await Bundle.find().populate("products");
-    res.json({ data: bundles });
+    
+    // Add baseUrl to product images
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const bundlesWithFullUrls = bundles.map(bundle => {
+      const bundleObj = bundle.toObject();
+      bundleObj.products = bundleObj.products.map(product => ({
+        ...product,
+        images: product.images ? product.images.map(img => `${baseUrl}${img}`) : []
+      }));
+      return bundleObj;
+    });
+    
+    res.json({ data: bundlesWithFullUrls });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -17,7 +29,16 @@ export const getBundleById = async (req, res) => {
     if (!bundle) {
       return res.status(404).json({ error: "Bundle not found" });
     }
-    res.json({ data: bundle });
+    
+    // Add baseUrl to product images
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const bundleObj = bundle.toObject();
+    bundleObj.products = bundleObj.products.map(product => ({
+      ...product,
+      images: product.images ? product.images.map(img => `${baseUrl}${img}`) : []
+    }));
+    
+    res.json({ data: bundleObj });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -160,7 +181,18 @@ export const getActiveBundles = async (req, res) => {
       ]
     }).populate("products");
     
-    res.json({ data: bundles });
+    // Add baseUrl to product images
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const bundlesWithFullUrls = bundles.map(bundle => {
+      const bundleObj = bundle.toObject();
+      bundleObj.products = bundleObj.products.map(product => ({
+        ...product,
+        images: product.images ? product.images.map(img => `${baseUrl}${img}`) : []
+      }));
+      return bundleObj;
+    });
+    
+    res.json({ data: bundlesWithFullUrls });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -189,7 +221,18 @@ export const getActiveBundlesByCategory = async (req, res) => {
       ]
     }).populate("products");
     
-    res.json({ data: bundles });
+    // Add baseUrl to product images
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const bundlesWithFullUrls = bundles.map(bundle => {
+      const bundleObj = bundle.toObject();
+      bundleObj.products = bundleObj.products.map(product => ({
+        ...product,
+        images: product.images ? product.images.map(img => `${baseUrl}${img}`) : []
+      }));
+      return bundleObj;
+    });
+    
+    res.json({ data: bundlesWithFullUrls });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -218,11 +261,22 @@ export const calculateBundleDiscount = async (req, res) => {
       ]
     }).populate("products");
     
+    // Add baseUrl to product images
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const bundlesWithFullUrls = bundles.map(bundle => {
+      const bundleObj = bundle.toObject();
+      bundleObj.products = bundleObj.products.map(product => ({
+        ...product,
+        images: product.images ? product.images.map(img => `${baseUrl}${img}`) : []
+      }));
+      return bundleObj;
+    });
+    
     let bestDiscount = null;
     let appliedBundle = null;
     
     // Check each bundle
-    for (const bundle of bundles) {
+    for (const bundle of bundlesWithFullUrls) {
       const bundleProductIds = bundle.products.map(p => p._id.toString());
       const cartProductIds = cartItems.map(item => item.productId);
       

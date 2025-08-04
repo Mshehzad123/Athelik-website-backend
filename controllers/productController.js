@@ -33,9 +33,19 @@ export const getProducts = async (req, res) => {
     
     const products = await Product.find(query).sort({ createdAt: -1 });
     
+    // Get the base URL for images
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Transform products to include full image URLs
+    const transformedProducts = products.map(product => {
+      const productObj = product.toObject();
+      productObj.images = product.images ? product.images.map(img => `${baseUrl}${img}`) : [];
+      return productObj;
+    });
+    
     res.status(200).json({
       success: true,
-      data: products
+      data: transformedProducts
     });
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -78,30 +88,37 @@ export const getPublicProducts = async (req, res) => {
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     
     // Transform products for frontend compatibility
-    const transformedProducts = products.map(product => ({
-      id: product._id,
-      name: product.title,
-      price: `$${product.basePrice.toFixed(2)}`,
-      originalPrice: product.discountPercentage > 0 ? 
-        `$${product.basePrice.toFixed(2)}` : undefined,
-      image: product.images && product.images.length > 0 ? 
-        `${baseUrl}${product.images[0]}` : "/placeholder.svg?height=400&width=300",
-      images: product.images ? product.images.map(img => `${baseUrl}${img}`) : [],
-      category: product.category,
-      subCategory: product.subCategory,
-      collectionType: product.collectionType,
-      description: product.description,
-      discountPercentage: product.discountPercentage || 0,
-      isOnSale: product.discountPercentage > 0,
-      colors: product.colorOptions.map(color => ({
-        name: color.name,
-        hex: color.type === 'hex' ? color.value : undefined,
-        image: color.type === 'image' ? color.value : undefined
-      })),
-      sizes: product.sizeOptions,
-      variants: product.variants,
-      defaultVariant: product.defaultVariant
-    }));
+    const transformedProducts = products.map(product => {
+      // Calculate discounted price
+      const originalPrice = product.basePrice;
+      const discountAmount = (originalPrice * product.discountPercentage) / 100;
+      const discountedPrice = originalPrice - discountAmount;
+      
+      return {
+        id: product._id,
+        name: product.title,
+        price: `$${discountedPrice.toFixed(2)}`,
+        originalPrice: product.discountPercentage > 0 ? 
+          `$${originalPrice.toFixed(2)}` : undefined,
+        image: product.images && product.images.length > 0 ? 
+          `${baseUrl}${product.images[0]}` : "/placeholder.svg?height=400&width=300",
+        images: product.images ? product.images.map(img => `${baseUrl}${img}`) : [],
+        category: product.category,
+        subCategory: product.subCategory,
+        collectionType: product.collectionType,
+        description: product.description,
+        discountPercentage: product.discountPercentage || 0,
+        isOnSale: product.discountPercentage > 0,
+        colors: product.colorOptions.map(color => ({
+          name: color.name,
+          hex: color.type === 'hex' ? color.value : undefined,
+          image: color.type === 'image' ? color.value : undefined
+        })),
+        sizes: product.sizeOptions,
+        variants: product.variants,
+        defaultVariant: product.defaultVariant
+      };
+    });
     
     res.status(200).json({
       success: true,
@@ -131,9 +148,16 @@ export const getProduct = async (req, res) => {
       });
     }
     
+    // Get the base URL for images
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Transform product to include full image URLs
+    const productObj = product.toObject();
+    productObj.images = product.images ? product.images.map(img => `${baseUrl}${img}`) : [];
+    
     res.status(200).json({
       success: true,
-      data: product
+      data: productObj
     });
   } catch (error) {
     console.error('Error fetching product:', error);
@@ -162,13 +186,18 @@ export const getPublicProduct = async (req, res) => {
     // Get the base URL for images
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     
+    // Calculate discounted price
+    const originalPrice = product.basePrice;
+    const discountAmount = (originalPrice * product.discountPercentage) / 100;
+    const discountedPrice = originalPrice - discountAmount;
+    
     // Transform product for frontend compatibility
     const transformedProduct = {
       id: product._id,
       name: product.title,
-      price: `$${product.basePrice.toFixed(2)}`,
+      price: `$${discountedPrice.toFixed(2)}`,
       originalPrice: product.discountPercentage > 0 ? 
-        `$${product.basePrice.toFixed(2)}` : undefined,
+        `$${originalPrice.toFixed(2)}` : undefined,
       image: product.images && product.images.length > 0 ? 
         `${baseUrl}${product.images[0]}` : "/placeholder.svg?height=400&width=300",
       images: product.images ? product.images.map(img => `${baseUrl}${img}`) : [],

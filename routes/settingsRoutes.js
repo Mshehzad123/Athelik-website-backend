@@ -1,6 +1,4 @@
 import express from "express";
-import multer from "multer";
-import path from "path";
 import { authenticateToken, requireRole } from "../middleware/auth.js";
 import {
   getSettings,
@@ -9,33 +7,14 @@ import {
 
 const router = express.Router();
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Public settings route (no authentication required)
+router.get('/public', getSettings);
 
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'), false);
-    }
-  }
-});
+// Public currency update route (no authentication required)
+router.put('/currency', updateSettings);
 
-// Settings routes
+// Settings routes (require authentication)
 router.get('/', authenticateToken, getSettings);
-router.put('/', authenticateToken, requireRole(["admin"]), upload.single("logo"), updateSettings);
+router.put('/', authenticateToken, requireRole(["admin"]), updateSettings);
 
 export default router; 

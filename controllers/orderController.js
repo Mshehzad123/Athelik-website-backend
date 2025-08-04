@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Order from "../models/Order.js";
 import Product from "../models/Product.js";
 import Bundle from "../models/Bundle.js";
@@ -149,10 +150,96 @@ const sendOrderConfirmationEmail = async (order) => {
   }
 };
 
+// Send order status update email
+const sendOrderStatusUpdateEmail = async (order, oldStatus, newStatus) => {
+  try {
+    const transporter = createTransporter();
+    
+    const statusMessages = {
+      'processing': 'Your order is now being processed and prepared for shipping.',
+      'shipped': 'Your order has been shipped and is on its way to you!',
+      'delivered': 'Your order has been delivered successfully.',
+      'cancelled': 'Your order has been cancelled as requested.'
+    };
+    
+    const statusMessage = statusMessages[newStatus] || `Your order status has been updated to: ${newStatus}`;
+    
+    const mailOptions = {
+      from: "shehzadali.6714349@gmail.com",
+      to: order.customer.email,
+      subject: `Order Status Update - ${order.orderNumber}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Order Status Update</h2>
+          <p>Dear ${order.customer.name},</p>
+          <p>Your order status has been updated!</p>
+          
+          <div style="background: #f9f9f9; padding: 20px; margin: 20px 0; border-radius: 5px;">
+            <h3>Order Details</h3>
+            <p><strong>Order Number:</strong> ${order.orderNumber}</p>
+            <p><strong>Previous Status:</strong> ${oldStatus}</p>
+            <p><strong>New Status:</strong> <span style="color: #007bff; font-weight: bold;">${newStatus}</span></p>
+            ${order.trackingNumber ? `<p><strong>Tracking Number:</strong> ${order.trackingNumber}</p>` : ''}
+          </div>
+          
+          <div style="margin: 20px 0;">
+            <h3>Status Update</h3>
+            <p>${statusMessage}</p>
+            ${newStatus === 'shipped' && order.trackingNumber ? `
+              <p><strong>Tracking Information:</strong></p>
+              <p>You can track your package using the tracking number: <strong>${order.trackingNumber}</strong></p>
+            ` : ''}
+          </div>
+          
+          <div style="margin: 20px 0;">
+            <h3>Items in Your Order:</h3>
+            ${order.items.map(item => `
+              <div style="border-bottom: 1px solid #eee; padding: 10px 0;">
+                <p><strong>${item.productName}</strong></p>
+                <p>Quantity: ${item.quantity}</p>
+                <p>Price: $${item.price}</p>
+              </div>
+            `).join('')}
+          </div>
+          
+          <div style="background: #f0f0f0; padding: 15px; border-radius: 5px;">
+            <p><strong>Total Amount:</strong> $${order.total}</p>
+          </div>
+          
+          <p>Thank you for shopping with us!</p>
+          <p>If you have any questions, please don't hesitate to contact our customer support.</p>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Order status update email sent to ${order.customer.email} (${oldStatus} → ${newStatus})`);
+  } catch (error) {
+    console.error("❌ Error sending order status update email:", error);
+    throw error;
+  }
+};
+
 // Create new order
 export const createOrder = async (req, res) => {
   try {
     const { customer, items, notes } = req.body;
+
+    // Validate required fields
+    if (!customer || !items || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Customer information and items are required",
+      });
+    }
+
+    // Validate customer data
+    if (!customer.name || !customer.email || !customer.phone) {
+      return res.status(400).json({
+        success: false,
+        message: "Customer name, email, and phone are required",
+      });
+    }
 
     // Calculate order totals
     let subtotal = 0;
@@ -163,12 +250,21 @@ export const createOrder = async (req, res) => {
       try {
         const product = await Product.findById(item.productId);
         if (!product) {
-          // If product not found, use the data from frontend
+          // If product not found, use the data from frontend but create a valid ObjectId
           const itemTotal = item.price * item.quantity;
           subtotal += itemTotal;
 
+          // Create a new ObjectId for the productId if it's not a valid ObjectId
+          let productId;
+          try {
+            productId = new mongoose.Types.ObjectId(item.productId);
+          } catch (error) {
+            // If the productId is not a valid ObjectId, create a new one
+            productId = new mongoose.Types.ObjectId();
+          }
+
           orderItems.push({
-            productId: item.productId,
+            productId: productId,
             productName: item.productName,
             variant: {
               size: item.size,
@@ -202,8 +298,17 @@ export const createOrder = async (req, res) => {
         const itemTotal = item.price * item.quantity;
         subtotal += itemTotal;
 
+        // Create a new ObjectId for the productId if it's not a valid ObjectId
+        let productId;
+        try {
+          productId = new mongoose.Types.ObjectId(item.productId);
+        } catch (error) {
+          // If the productId is not a valid ObjectId, create a new one
+          productId = new mongoose.Types.ObjectId();
+        }
+
         orderItems.push({
-          productId: item.productId,
+          productId: productId,
           productName: item.productName,
           variant: {
             size: item.size,
@@ -229,6 +334,9 @@ export const createOrder = async (req, res) => {
     // Generate order number
     const orderCount = await Order.countDocuments();
     const orderNumber = `ORD-${String(orderCount + 1).padStart(6, "0")}-${Date.now().toString().slice(-4)}`;
+    
+    console.log("Generated order number:", orderNumber);
+    console.log("Order items:", JSON.stringify(orderItems, null, 2));
 
     // Create order
     const order = new Order({
@@ -243,6 +351,8 @@ export const createOrder = async (req, res) => {
       notes,
       isFreeShipping: shippingCost === 0,
     });
+    
+    console.log("Order object before save:", JSON.stringify(order, null, 2));
 
     await order.save();
 
@@ -266,6 +376,27 @@ export const createOrder = async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating order:", error);
+    console.error("Request body:", req.body);
+    
+    // Handle specific validation errors
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: "Validation error",
+        error: validationErrors.join(', '),
+      });
+    }
+    
+    // Handle MongoDB duplicate key errors
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: "Duplicate order number",
+        error: "Order number already exists",
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: "Failed to create order",
@@ -354,16 +485,32 @@ export const updateOrderStatus = async (req, res) => {
       });
     }
 
+    const oldStatus = order.status;
     order.status = status;
     if (trackingNumber) order.trackingNumber = trackingNumber;
     if (notes) order.notes = notes;
 
     await order.save();
 
+    // Send email notification if status changed
+    let emailSent = false;
+    if (oldStatus !== status) {
+      try {
+        await sendOrderStatusUpdateEmail(order, oldStatus, status);
+        emailSent = true;
+        console.log(`✅ Status update email sent for order ${order.orderNumber}`);
+      } catch (emailError) {
+        console.error("❌ Email sending failed, but order was updated:", emailError);
+        emailSent = false;
+      }
+    }
+
     res.status(200).json({
       success: true,
       message: "Order updated successfully",
       data: order,
+      emailSent: emailSent,
+      statusChanged: oldStatus !== status
     });
   } catch (error) {
     console.error("Error updating order:", error);

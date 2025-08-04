@@ -73,7 +73,9 @@ export const calculateShipping = async (req, res) => {
       return res.status(400).json({ error: "Valid subtotal is required" });
     }
 
-    // Find applicable shipping rules
+    console.log(`Calculating shipping for subtotal: $${subtotal}, region: ${region}, weight: ${weight}`);
+
+    // First, try to find rules that match the exact order amount range
     const applicableRules = await ShippingRule.find({
       isActive: true,
       region: { $in: [region, 'GLOBAL'] },
@@ -83,63 +85,91 @@ export const calculateShipping = async (req, res) => {
       maxWeight: { $gte: weight }
     }).sort({ priority: 1 });
 
-    if (applicableRules.length === 0) {
-      // Try to find any active rule for the region
+    console.log(`Found ${applicableRules.length} applicable rules for exact range match`);
+
+    if (applicableRules.length > 0) {
+      // Use the highest priority rule (lowest number = highest priority)
+      const selectedRule = applicableRules[0];
+      
+      console.log(`Selected rule: ${selectedRule.name}`);
+      console.log(`Rule details: minOrder=${selectedRule.minOrderAmount}, maxOrder=${selectedRule.maxOrderAmount}, shippingCost=${selectedRule.shippingCost}, freeShippingAt=${selectedRule.freeShippingAt}`);
+      
+      // Check if free shipping applies
+      const isFreeShipping = subtotal >= selectedRule.freeShippingAt;
+      const shippingCost = isFreeShipping ? 0 : selectedRule.shippingCost;
+
+      const result = {
+        shippingCost,
+        isFreeShipping,
+        deliveryDays: selectedRule.deliveryDays,
+        rule: {
+          name: selectedRule.name,
+          region: selectedRule.region,
+          freeShippingAt: selectedRule.freeShippingAt,
+          minOrderAmount: selectedRule.minOrderAmount,
+          maxOrderAmount: selectedRule.maxOrderAmount
+        },
+        remainingForFreeShipping: isFreeShipping ? 0 : Math.max(0, selectedRule.freeShippingAt - subtotal)
+      };
+
+      console.log(`Shipping calculation result:`, result);
+      return res.json(result);
+    }
+
+    // If no exact range match, try to find any active rule for the region
+    console.log(`No exact range match found, looking for any active rule for region: ${region}`);
+    
       const anyActiveRule = await ShippingRule.findOne({
         isActive: true,
         region: { $in: [region, 'GLOBAL'] }
       }).sort({ priority: 1 });
 
       if (anyActiveRule) {
+      console.log(`Found fallback rule: ${anyActiveRule.name}`);
+      console.log(`Rule details: minOrder=${anyActiveRule.minOrderAmount}, maxOrder=${anyActiveRule.maxOrderAmount}, shippingCost=${anyActiveRule.shippingCost}, freeShippingAt=${anyActiveRule.freeShippingAt}`);
+      
         const isFreeShipping = subtotal >= anyActiveRule.freeShippingAt;
         const shippingCost = isFreeShipping ? 0 : anyActiveRule.shippingCost;
         
-        return res.json({
+      const result = {
           shippingCost,
           isFreeShipping,
           deliveryDays: anyActiveRule.deliveryDays,
           rule: {
             name: anyActiveRule.name,
             region: anyActiveRule.region,
-            freeShippingAt: anyActiveRule.freeShippingAt
-          },
-          remainingForFreeShipping: isFreeShipping ? 0 : anyActiveRule.freeShippingAt - subtotal
-        });
+          freeShippingAt: anyActiveRule.freeShippingAt,
+          minOrderAmount: anyActiveRule.minOrderAmount,
+          maxOrderAmount: anyActiveRule.maxOrderAmount
+        },
+        remainingForFreeShipping: isFreeShipping ? 0 : Math.max(0, anyActiveRule.freeShippingAt - subtotal)
+      };
+
+      console.log(`Fallback shipping calculation result:`, result);
+      return res.json(result);
       } else {
         // Fallback to default values if no rules exist
-        return res.json({
+      console.log(`No active rules found, using default values`);
+      
+      const result = {
           shippingCost: subtotal >= 100 ? 0 : 10,
           isFreeShipping: subtotal >= 100,
           deliveryDays: 3,
           rule: {
             name: "Default Shipping",
             region: "US",
-            freeShippingAt: 100
-          },
-          remainingForFreeShipping: subtotal >= 100 ? 0 : 100 - subtotal
-        });
-      }
+          freeShippingAt: 100,
+          minOrderAmount: 0,
+          maxOrderAmount: 10000
+        },
+        remainingForFreeShipping: subtotal >= 100 ? 0 : Math.max(0, 100 - subtotal)
+      };
+
+      console.log(`Default shipping calculation result:`, result);
+      return res.json(result);
     }
-
-    // Use the highest priority rule (lowest number = highest priority)
-    const selectedRule = applicableRules[0];
-    
-    // Check if free shipping applies
-    const isFreeShipping = subtotal >= selectedRule.freeShippingAt;
-    const shippingCost = isFreeShipping ? 0 : selectedRule.shippingCost;
-
-    res.json({
-      shippingCost,
-      isFreeShipping,
-      deliveryDays: selectedRule.deliveryDays,
-      rule: {
-        name: selectedRule.name,
-        region: selectedRule.region,
-        freeShippingAt: selectedRule.freeShippingAt
-      },
-      remainingForFreeShipping: isFreeShipping ? 0 : selectedRule.freeShippingAt - subtotal
-    });
   } catch (error) {
+    console.error('Error calculating shipping:', error);
     res.status(500).json({ error: error.message });
   }
 };

@@ -5,12 +5,15 @@ export const getSettings = async (req, res) => {
   try {
     let settings = await Settings.findOne();
     if (!settings) {
-      settings = new Settings({});
+      // Create default settings with USD currency
+      settings = new Settings({ currency: "USD" });
       await settings.save();
     }
-    res.json(settings);
+    // Only return the currency field to match frontend expectations
+    res.json({ currency: settings.currency });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error fetching settings:", error);
+    res.status(500).json({ error: "Failed to fetch settings" });
   }
 };
 
@@ -18,20 +21,22 @@ export const getSettings = async (req, res) => {
 export const updateSettings = async (req, res) => {
   try {
     const settingsData = JSON.parse(req.body.settingsData || "{}");
-    if (req.file) {
-      settingsData.logo = req.file.path;
-    }
-
+    
     let settings = await Settings.findOne();
     if (!settings) {
       settings = new Settings(settingsData);
     } else {
-      Object.assign(settings, settingsData);
+      // Only update currency field
+      if (settingsData.currency) {
+        settings.currency = settingsData.currency;
+      }
     }
 
     await settings.save();
-    res.json(settings);
+    // Only return the currency field to match frontend expectations
+    res.json({ currency: settings.currency });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error updating settings:", error);
+    res.status(500).json({ error: "Failed to update settings" });
   }
 }; 
