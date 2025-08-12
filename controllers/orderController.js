@@ -101,7 +101,7 @@ const sendOrderConfirmationEmail = async (order) => {
     const transporter = createTransporter();
     
     const mailOptions = {
-      from: "shehzadali.6714349@gmail.com",
+      from: "marketing@athlekt.com",
       to: order.customer.email,
       subject: `Order Confirmation - ${order.orderNumber}`,
       html: `
@@ -123,17 +123,17 @@ const sendOrderConfirmationEmail = async (order) => {
               <div style="border-bottom: 1px solid #eee; padding: 10px 0;">
                 <p><strong>${item.productName}</strong></p>
                 <p>Quantity: ${item.quantity}</p>
-                <p>Price: $${item.price}</p>
-                <p>Total: $${item.totalPrice}</p>
+                <p>Price: AED${item.price}</p>
+                <p>Total: AED${item.totalPrice}</p>
               </div>
             `).join('')}
           </div>
           
           <div style="background: #f0f0f0; padding: 15px; border-radius: 5px;">
-            <p><strong>Subtotal:</strong> $${order.subtotal}</p>
-            ${order.bundleDiscount > 0 ? `<p><strong>Bundle Discount:</strong> -$${order.bundleDiscount}</p>` : ''}
-            <p><strong>Shipping:</strong> $${order.shippingCost}</p>
-            <p><strong>Total:</strong> $${order.total}</p>
+            <p><strong>Subtotal:</strong> AED${order.subtotal}</p>
+            ${order.bundleDiscount > 0 ? `<p><strong>Bundle Discount:</strong> -AED${order.bundleDiscount}</p>` : ''}
+            <p><strong>Shipping:</strong> AED${order.shippingCost}</p>
+            <p><strong>Total:</strong> AED${order.total}</p>
           </div>
           
           <p>We'll send you another email when your order ships.</p>
@@ -165,7 +165,7 @@ const sendOrderStatusUpdateEmail = async (order, oldStatus, newStatus) => {
     const statusMessage = statusMessages[newStatus] || `Your order status has been updated to: ${newStatus}`;
     
     const mailOptions = {
-      from: "shehzadali.6714349@gmail.com",
+      from: "marketing@athlekt.com",
       to: order.customer.email,
       subject: `Order Status Update - ${order.orderNumber}`,
       html: `
@@ -197,13 +197,13 @@ const sendOrderStatusUpdateEmail = async (order, oldStatus, newStatus) => {
               <div style="border-bottom: 1px solid #eee; padding: 10px 0;">
                 <p><strong>${item.productName}</strong></p>
                 <p>Quantity: ${item.quantity}</p>
-                <p>Price: $${item.price}</p>
+                <p>Price: AED${item.price}</p>
               </div>
             `).join('')}
           </div>
           
           <div style="background: #f0f0f0; padding: 15px; border-radius: 5px;">
-            <p><strong>Total Amount:</strong> $${order.total}</p>
+            <p><strong>Total Amount:</strong> AED${order.total}</p>
           </div>
           
           <p>Thank you for shopping with us!</p>

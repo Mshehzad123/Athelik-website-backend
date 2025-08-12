@@ -97,9 +97,9 @@ export const getPublicProducts = async (req, res) => {
       return {
         id: product._id,
         name: product.title,
-        price: `$${discountedPrice.toFixed(2)}`,
+        price: `AED${discountedPrice.toFixed(2)}`,
         originalPrice: product.discountPercentage > 0 ? 
-          `$${originalPrice.toFixed(2)}` : undefined,
+          `AED${originalPrice.toFixed(2)}` : undefined,
         image: product.images && product.images.length > 0 ? 
           `${baseUrl}${product.images[0]}` : "/placeholder.svg?height=400&width=300",
         images: product.images ? product.images.map(img => `${baseUrl}${img}`) : [],
@@ -195,9 +195,9 @@ export const getPublicProduct = async (req, res) => {
     const transformedProduct = {
       id: product._id,
       name: product.title,
-      price: `$${discountedPrice.toFixed(2)}`,
+      price: `AED${discountedPrice.toFixed(2)}`,
       originalPrice: product.discountPercentage > 0 ? 
-        `$${originalPrice.toFixed(2)}` : undefined,
+        `AED${originalPrice.toFixed(2)}` : undefined,
       image: product.images && product.images.length > 0 ? 
         `${baseUrl}${product.images[0]}` : "/placeholder.svg?height=400&width=300",
       images: product.images ? product.images.map(img => `${baseUrl}${img}`) : [],

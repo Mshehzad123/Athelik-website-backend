@@ -16,13 +16,12 @@ const bundleSchema = new mongoose.Schema({
   },
   bundleType: {
     type: String,
-    enum: ['4-products', '6-products'],
+    enum: ['2-products', '3-products', '4-products', '5-products', '6-products'],
     required: true
   },
   category: {
     type: String,
-    enum: ['men', 'women'],
-    required: true
+    required: false,
   },
   startDate: Date,
   endDate: Date,
@@ -40,4 +39,4 @@ const bundleSchema = new mongoose.Schema({
 
 const Bundle = mongoose.model("Bundle", bundleSchema);
 
-export default Bundle; 
+export default Bundle;

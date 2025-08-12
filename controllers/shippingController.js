@@ -73,7 +73,7 @@ export const calculateShipping = async (req, res) => {
       return res.status(400).json({ error: "Valid subtotal is required" });
     }
 
-    console.log(`Calculating shipping for subtotal: $${subtotal}, region: ${region}, weight: ${weight}`);
+    console.log(`Calculating shipping for subtotal: AED${subtotal}, region: ${region}, weight: ${weight}`);
 
     // First, try to find rules that match the exact order amount range
     const applicableRules = await ShippingRule.find({

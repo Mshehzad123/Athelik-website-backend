@@ -183,7 +183,7 @@ export const validateCoupon = async (req, res) => {
     // Check minimum amount
     if (coupon.minAmount && cartTotal < coupon.minAmount) {
       return res.status(400).json({ 
-        message: `Minimum order amount of $${coupon.minAmount} required` 
+        message: `Minimum order amount of AED${coupon.minAmount} required` 
       });
     }
 
