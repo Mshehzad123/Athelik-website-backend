@@ -191,6 +191,45 @@ export const deleteCustomer = async (req, res) => {
   }
 };
 
+// Update customer profile (for customers to update their own profile)
+export const updateCustomerProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { firstName, lastName, name, dateOfBirth, marketingOptIn } = req.body;
+
+    const customer = await Customer.findById(userId);
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+
+    // Update fields
+    if (firstName && lastName) {
+      customer.name = `${firstName} ${lastName}`;
+    } else if (name) {
+      customer.name = name;
+    }
+    if (dateOfBirth) customer.dateOfBirth = dateOfBirth;
+    if (marketingOptIn !== undefined) customer.marketingOptIn = marketingOptIn;
+
+    await customer.save();
+
+    res.json({
+      message: "Profile updated successfully",
+      customer: {
+        id: customer._id,
+        email: customer.email,
+        name: customer.name,
+        dateOfBirth: customer.dateOfBirth,
+        marketingOptIn: customer.marketingOptIn,
+        isEmailVerified: customer.isEmailVerified
+      }
+    });
+  } catch (error) {
+    console.error("Error updating customer profile:", error);
+    res.status(500).json({ message: "Error updating profile" });
+  }
+};
+
 // Get customer statistics
 export const getCustomerStats = async (req, res) => {
   try {

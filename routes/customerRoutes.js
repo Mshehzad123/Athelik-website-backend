@@ -6,6 +6,7 @@ import {
   banCustomer,
   unbanCustomer,
   updateCustomer,
+  updateCustomerProfile,
   deleteCustomer,
   getCustomerStats
 } from "../controllers/customerController.js";
@@ -20,5 +21,8 @@ router.put('/:id', authenticateToken, requireRole(["admin", "manager"]), updateC
 router.delete('/:id', authenticateToken, requireRole("admin"), deleteCustomer);
 router.post('/ban/:customerId', authenticateToken, requireRole("admin"), banCustomer);
 router.post('/unban/:customerId', authenticateToken, requireRole("admin"), unbanCustomer);
+
+// Customer routes (for customers to update their own profile)
+router.put('/profile/update', authenticateToken, updateCustomerProfile);
 
 export default router; 
