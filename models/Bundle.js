@@ -16,7 +16,6 @@ const bundleSchema = new mongoose.Schema({
   },
   bundleType: {
     type: String,
-    enum: ['2-products', '3-products', '4-products', '5-products', '6-products'],
     required: true
   },
   category: {

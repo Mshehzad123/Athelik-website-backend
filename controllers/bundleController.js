@@ -43,10 +43,10 @@ export const createBundle = async (req, res) => {
   try {
     const bundleData = req.body;
 
-    // Validate product count (must be between 2 and 6)
-    if (!bundleData.products || bundleData.products.length < 2 || bundleData.products.length > 6) {
+    // Validate product count (must be at least 2)
+    if (!bundleData.products || bundleData.products.length < 2) {
       return res.status(400).json({
-        error: "Bundle must contain between 2 and 6 products"
+        error: "Bundle must contain at least 2 products"
       });
     }
 
@@ -86,10 +86,10 @@ export const updateBundle = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
-    // Validate product count (must be between 2 and 6) if products are being updated
-    if (updateData.products && (updateData.products.length < 2 || updateData.products.length > 6)) {
+    // Validate product count (must be at least 2) if products are being updated
+    if (updateData.products && updateData.products.length < 2) {
       return res.status(400).json({
-        error: "Bundle must contain between 2 and 6 products"
+        error: "Bundle must contain at least 2 products"
       });
     }
 
@@ -149,17 +149,30 @@ export const deleteBundle = async (req, res) => {
 export const getActiveBundles = async (req, res) => {
   try {
     const now = new Date();
+    console.log('🔍 Fetching active bundles at:', now.toISOString());
+    
     const bundles = await Bundle.find({
       isActive: true,
-      $or: [
-        { startDate: { $exists: false } },
-        { startDate: { $lte: now } }
-      ],
-      $or: [
-        { endDate: { $exists: false } },
-        { endDate: { $gte: now } }
+      $and: [
+        {
+          $or: [
+            { startDate: { $exists: false } },
+            { startDate: { $lte: now } }
+          ]
+        },
+        {
+          $or: [
+            { endDate: { $exists: false } },
+            { endDate: { $gte: now } }
+          ]
+        }
       ]
     }).populate("products");
+    
+    console.log('📦 Found bundles:', bundles.length);
+    bundles.forEach(bundle => {
+      console.log(`Bundle: ${bundle.name}, Start: ${bundle.startDate}, End: ${bundle.endDate}, Category: ${bundle.category}`);
+    });
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     const bundlesWithFullUrls = bundles.map(bundle => {
       const bundleObj = bundle.toObject();
@@ -180,21 +193,32 @@ export const getActiveBundlesByCategory = async (req, res) => {
   try {
     const { category } = req.params;
 
-    if (!['men', 'women'].includes(category)) {
-      return res.status(400).json({ error: "Category must be 'men' or 'women'" });
+    if (!['men', 'women', 'mixed'].includes(category)) {
+      return res.status(400).json({ error: "Category must be 'men', 'women', or 'mixed'" });
     }
 
     const now = new Date();
+    // For mixed category, get bundles that have mixed category or no category
+    const categoryFilter = category === 'mixed' 
+      ? { $or: [{ category: 'mixed' }, { category: { $exists: false } }] }
+      : { category: category };
+      
     const bundles = await Bundle.find({
       isActive: true,
-      category: category,
-      $or: [
-        { startDate: { $exists: false } },
-        { startDate: { $lte: now } }
-      ],
-      $or: [
-        { endDate: { $exists: false } },
-        { endDate: { $gte: now } }
+      ...categoryFilter,
+      $and: [
+        {
+          $or: [
+            { startDate: { $exists: false } },
+            { startDate: { $lte: now } }
+          ]
+        },
+        {
+          $or: [
+            { endDate: { $exists: false } },
+            { endDate: { $gte: now } }
+          ]
+        }
       ]
     }).populate("products");
     const baseUrl = `${req.protocol}://${req.get('host')}`;
@@ -225,13 +249,19 @@ export const calculateBundleDiscount = async (req, res) => {
     const now = new Date();
     const bundles = await Bundle.find({
       isActive: true,
-      $or: [
-        { startDate: { $exists: false } },
-        { startDate: { $lte: now } }
-      ],
-      $or: [
-        { endDate: { $exists: false } },
-        { endDate: { $gte: now } }
+      $and: [
+        {
+          $or: [
+            { startDate: { $exists: false } },
+            { startDate: { $lte: now } }
+          ]
+        },
+        {
+          $or: [
+            { endDate: { $exists: false } },
+            { endDate: { $gte: now } }
+          ]
+        }
       ]
     }).populate("products");
     const baseUrl = `${req.protocol}://${req.get('host')}`;
