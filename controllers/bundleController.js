@@ -155,15 +155,15 @@ export const getActiveBundles = async (req, res) => {
       isActive: true,
       $and: [
         {
-          $or: [
-            { startDate: { $exists: false } },
-            { startDate: { $lte: now } }
+      $or: [
+        { startDate: { $exists: false } },
+        { startDate: { $lte: now } }
           ]
         },
         {
-          $or: [
-            { endDate: { $exists: false } },
-            { endDate: { $gte: now } }
+      $or: [
+        { endDate: { $exists: false } },
+        { endDate: { $gte: now } }
           ]
         }
       ]
@@ -208,15 +208,15 @@ export const getActiveBundlesByCategory = async (req, res) => {
       ...categoryFilter,
       $and: [
         {
-          $or: [
-            { startDate: { $exists: false } },
-            { startDate: { $lte: now } }
+      $or: [
+        { startDate: { $exists: false } },
+        { startDate: { $lte: now } }
           ]
         },
         {
-          $or: [
-            { endDate: { $exists: false } },
-            { endDate: { $gte: now } }
+      $or: [
+        { endDate: { $exists: false } },
+        { endDate: { $gte: now } }
           ]
         }
       ]
@@ -251,15 +251,15 @@ export const calculateBundleDiscount = async (req, res) => {
       isActive: true,
       $and: [
         {
-          $or: [
-            { startDate: { $exists: false } },
-            { startDate: { $lte: now } }
+      $or: [
+        { startDate: { $exists: false } },
+        { startDate: { $lte: now } }
           ]
         },
         {
-          $or: [
-            { endDate: { $exists: false } },
-            { endDate: { $gte: now } }
+      $or: [
+        { endDate: { $exists: false } },
+        { endDate: { $gte: now } }
           ]
         }
       ]
