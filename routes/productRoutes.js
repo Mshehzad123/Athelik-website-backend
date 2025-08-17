@@ -11,7 +11,8 @@ import {
   deleteProduct,
   uploadProductImages,
   getProductStats,
-  getHighlightedProducts
+  getHighlightedProducts,
+  getProductHighlightImage
 } from "../controllers/productController.js";
 
 const router = express.Router();
@@ -53,6 +54,7 @@ router.delete('/:id', deleteProduct);
 // Public product routes (no authentication required)
 router.get('/public/all', getPublicProducts);
 router.get('/public/highlighted', getHighlightedProducts);
+router.get('/public/highlight/:productId', getProductHighlightImage);
 router.get('/public/:id', getPublicProduct);
 
 // Image upload route

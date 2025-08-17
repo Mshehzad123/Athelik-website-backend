@@ -622,4 +622,60 @@ export const getHighlightedProducts = async (req, res) => {
       error: error.message
     });
   }
+};
+
+// Get current product's highlight image (for per-product highlight)
+export const getProductHighlightImage = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    
+    const product = await Product.findById(productId);
+    
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found'
+      });
+    }
+    
+    // Check if this product has a highlight image
+    if (!product.isProductHighlight) {
+      return res.status(200).json({
+        success: true,
+        data: null
+      });
+    }
+    
+    // Get the base URL for images
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Get the highlight image (specific image selected for highlight)
+    const highlightImageIndex = product.highlightImageIndex || 0;
+    
+    const highlightImage = product.images && product.images.length > highlightImageIndex 
+      ? `${baseUrl}${product.images[highlightImageIndex]}` 
+      : (product.images && product.images.length > 0 ? `${baseUrl}${product.images[0]}` : null);
+    
+    // Transform product for frontend compatibility
+    const transformedProduct = {
+      id: product._id,
+      name: product.title,
+      title: product.title,
+      image: highlightImage, // Use the specific highlight image
+      isProductHighlight: product.isProductHighlight,
+      highlightImageIndex: product.highlightImageIndex
+    };
+
+    res.status(200).json({
+      success: true,
+      data: transformedProduct
+    });
+  } catch (error) {
+    console.error('Error fetching product highlight image:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch product highlight image',
+      error: error.message
+    });
+  }
 }; 
