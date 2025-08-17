@@ -564,18 +564,6 @@ export const getHighlightedProducts = async (req, res) => {
       isProductHighlight: true 
     }).sort({ createdAt: -1 });
     
-    console.log('🔍 Debug: Looking for highlighted product...');
-    console.log('🔍 Debug: Found product:', product ? product.title : 'None');
-    if (product) {
-      console.log('🔍 Debug: Product details:', {
-        title: product.title,
-        isActive: product.isActive,
-        isProductHighlight: product.isProductHighlight,
-        highlightImageIndex: product.highlightImageIndex,
-        imagesCount: product.images ? product.images.length : 0
-      });
-    }
-    
     if (!product) {
       return res.status(200).json({
         success: true,
@@ -593,6 +581,7 @@ export const getHighlightedProducts = async (req, res) => {
     
     // Get the highlight image (specific image selected for highlight)
     const highlightImageIndex = product.highlightImageIndex || 0;
+    
     const highlightImage = product.images && product.images.length > highlightImageIndex 
       ? `${baseUrl}${product.images[highlightImageIndex]}` 
       : (product.images && product.images.length > 0 ? `${baseUrl}${product.images[0]}` : null);
