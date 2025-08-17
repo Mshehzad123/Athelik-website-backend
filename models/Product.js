@@ -135,18 +135,13 @@ const productSchema = new mongoose.Schema({
     type: String,
     required: true
   }],
+  highlightImage: {
+    type: String,
+    trim: true
+  },
   isActive: {
     type: Boolean,
     default: true
-  },
-  isProductHighlight: {
-    type: Boolean,
-    default: false
-  },
-  highlightImageIndex: {
-    type: Number,
-    min: 0,
-    default: 0
   },
   sizeOptions: [{
     type: String,

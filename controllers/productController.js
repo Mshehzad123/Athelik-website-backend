@@ -40,6 +40,7 @@ export const getProducts = async (req, res) => {
     const transformedProducts = products.map(product => {
       const productObj = product.toObject();
       productObj.images = product.images ? product.images.map(img => `${baseUrl}${img}`) : [];
+      productObj.highlightImage = product.highlightImage ? `${baseUrl}${product.highlightImage}` : undefined;
       return productObj;
     });
     
@@ -103,6 +104,7 @@ export const getPublicProducts = async (req, res) => {
         image: product.images && product.images.length > 0 ? 
           `${baseUrl}${product.images[0]}` : "/placeholder.svg?height=400&width=300",
         images: product.images ? product.images.map(img => `${baseUrl}${img}`) : [],
+        highlightImage: product.highlightImage ? `${baseUrl}${product.highlightImage}` : undefined,
         category: product.category,
         subCategory: product.subCategory,
         collectionType: product.collectionType,
@@ -154,6 +156,7 @@ export const getProduct = async (req, res) => {
     // Transform product to include full image URLs
     const productObj = product.toObject();
     productObj.images = product.images ? product.images.map(img => `${baseUrl}${img}`) : [];
+    productObj.highlightImage = product.highlightImage ? `${baseUrl}${product.highlightImage}` : undefined;
     
     res.status(200).json({
       success: true,
@@ -201,6 +204,7 @@ export const getPublicProduct = async (req, res) => {
       image: product.images && product.images.length > 0 ? 
         `${baseUrl}${product.images[0]}` : "/placeholder.svg?height=400&width=300",
       images: product.images ? product.images.map(img => `${baseUrl}${img}`) : [],
+      highlightImage: product.highlightImage ? `${baseUrl}${product.highlightImage}` : undefined,
       category: product.category,
       subCategory: product.subCategory,
       description: product.description,
@@ -254,13 +258,12 @@ export const createProduct = async (req, res) => {
       care,
       reviewRating,
       isActive,
-      isProductHighlight,
-      highlightImageIndex,
       sizeOptions,
       colorOptions,
       variants,
       defaultVariant,
-      images
+      images,
+      highlightImage
     } = req.body;
 
     // Validate required fields
@@ -288,14 +291,6 @@ export const createProduct = async (req, res) => {
       });
     }
 
-    // Validate highlight image index if product is being highlighted
-    if (isProductHighlight && (highlightImageIndex === undefined || highlightImageIndex < 0 || highlightImageIndex >= images.length)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please select a valid highlight image when marking product as highlighted'
-      });
-    }
-
     // Validate size and color options
     if (!sizeOptions || sizeOptions.length === 0) {
       return res.status(400).json({
@@ -309,14 +304,6 @@ export const createProduct = async (req, res) => {
         success: false,
         message: 'Please add at least one color option'
       });
-    }
-
-    // If this product is being marked as highlighted, unhighlight all other products
-    if (isProductHighlight) {
-      await Product.updateMany(
-        { _id: { $ne: null } }, // Update all products
-        { isProductHighlight: false }
-      );
     }
 
     const productData = {
@@ -333,13 +320,12 @@ export const createProduct = async (req, res) => {
       care,
       reviewRating: reviewRating ? parseFloat(reviewRating) : 5,
       isActive: isActive !== undefined ? isActive : true,
-      isProductHighlight: isProductHighlight !== undefined ? isProductHighlight : false,
-      highlightImageIndex: highlightImageIndex !== undefined ? parseInt(highlightImageIndex) : 0,
       sizeOptions,
       colorOptions,
       variants: variants || [],
       defaultVariant,
-      images
+      images,
+      highlightImage: highlightImage || ""
     };
 
     const product = new Product(productData);
@@ -406,25 +392,6 @@ export const updateProduct = async (req, res) => {
         success: false,
         message: 'At least one product image is required'
       });
-    }
-
-    // Validate highlight image index if product is being highlighted
-    if (updateData.isProductHighlight && updateData.highlightImageIndex !== undefined) {
-      const images = updateData.images || existingProduct.images;
-      if (updateData.highlightImageIndex < 0 || updateData.highlightImageIndex >= images.length) {
-        return res.status(400).json({
-          success: false,
-          message: 'Please select a valid highlight image when marking product as highlighted'
-        });
-      }
-    }
-
-    // If this product is being marked as highlighted, unhighlight all other products
-    if (updateData.isProductHighlight) {
-      await Product.updateMany(
-        { _id: { $ne: id } }, // Update all products except current one
-        { isProductHighlight: false }
-      );
     }
 
     const updatedProduct = await Product.findByIdAndUpdate(
@@ -551,130 +518,6 @@ export const getProductStats = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch product statistics',
-      error: error.message
-    });
-  }
-};
-
-// Get highlighted product (for public website) - only one product can be highlighted
-export const getHighlightedProducts = async (req, res) => {
-  try {
-    const product = await Product.findOne({ 
-      isActive: true, 
-      isProductHighlight: true 
-    }).sort({ createdAt: -1 });
-    
-    if (!product) {
-      return res.status(200).json({
-        success: true,
-        data: null
-      });
-    }
-    
-    // Get the base URL for images
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    
-    // Calculate discounted price
-    const originalPrice = product.basePrice;
-    const discountAmount = (originalPrice * product.discountPercentage) / 100;
-    const discountedPrice = originalPrice - discountAmount;
-    
-    // Get the highlight image (specific image selected for highlight)
-    const highlightImageIndex = product.highlightImageIndex || 0;
-    
-    const highlightImage = product.images && product.images.length > highlightImageIndex 
-      ? `${baseUrl}${product.images[highlightImageIndex]}` 
-      : (product.images && product.images.length > 0 ? `${baseUrl}${product.images[0]}` : null);
-    
-    // Transform product for frontend compatibility
-    const transformedProduct = {
-      id: product._id,
-      name: product.title,
-      title: product.title,
-      price: `AED${discountedPrice.toFixed(2)}`,
-      basePrice: product.basePrice,
-      originalPrice: originalPrice,
-      image: highlightImage, // Use the specific highlight image
-      images: product.images ? product.images.map(img => `${baseUrl}${img}`) : [],
-      category: product.category,
-      subCategory: product.subCategory,
-      description: product.description,
-      isOnSale: product.discountPercentage > 0,
-      colors: product.colorOptions || [],
-      sizes: product.sizeOptions || [],
-      sizeOptions: product.sizeOptions || [],
-      variants: product.variants || [],
-      defaultVariant: product.defaultVariant,
-      rating: product.reviewRating || 5,
-      reviewRating: product.reviewRating || 5,
-      reviewCount: 0
-    };
-
-    res.status(200).json({
-      success: true,
-      data: transformedProduct
-    });
-  } catch (error) {
-    console.error('Error fetching highlighted product:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch highlighted product',
-      error: error.message
-    });
-  }
-};
-
-// Get current product's highlight image (for per-product highlight)
-export const getProductHighlightImage = async (req, res) => {
-  try {
-    const { productId } = req.params;
-    
-    const product = await Product.findById(productId);
-    
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
-    }
-    
-    // Check if this product has a highlight image
-    if (!product.isProductHighlight) {
-      return res.status(200).json({
-        success: true,
-        data: null
-      });
-    }
-    
-    // Get the base URL for images
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    
-    // Get the highlight image (specific image selected for highlight)
-    const highlightImageIndex = product.highlightImageIndex || 0;
-    
-    const highlightImage = product.images && product.images.length > highlightImageIndex 
-      ? `${baseUrl}${product.images[highlightImageIndex]}` 
-      : (product.images && product.images.length > 0 ? `${baseUrl}${product.images[0]}` : null);
-    
-    // Transform product for frontend compatibility
-    const transformedProduct = {
-      id: product._id,
-      name: product.title,
-      title: product.title,
-      image: highlightImage, // Use the specific highlight image
-      isProductHighlight: product.isProductHighlight,
-      highlightImageIndex: product.highlightImageIndex
-    };
-
-    res.status(200).json({
-      success: true,
-      data: transformedProduct
-    });
-  } catch (error) {
-    console.error('Error fetching product highlight image:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch product highlight image',
       error: error.message
     });
   }
