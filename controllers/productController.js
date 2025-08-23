@@ -400,10 +400,18 @@ export const updateProduct = async (req, res) => {
       { new: true, runValidators: true }
     );
 
+    // Get the base URL for images
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Transform product to include full image URLs
+    const productObj = updatedProduct.toObject();
+    productObj.images = updatedProduct.images ? updatedProduct.images.map(img => `${baseUrl}${img}`) : [];
+    productObj.highlightImage = updatedProduct.highlightImage ? `${baseUrl}${updatedProduct.highlightImage}` : undefined;
+
     res.status(200).json({
       success: true,
       message: 'Product updated successfully',
-      data: updatedProduct
+      data: productObj
     });
   } catch (error) {
     console.error('Error updating product:', error);
