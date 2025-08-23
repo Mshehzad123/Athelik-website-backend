@@ -9,7 +9,6 @@ export const sendSignupOTP = async (req, res) => {
   try {
     const { email } = req.body;
 
-    // Check if customer already exists
     const existingCustomer = await Customer.findOne({ email });
     if (existingCustomer && existingCustomer.isEmailVerified) {
       return res.status(400).json({ message: "Customer already exists with this email" });
@@ -18,13 +17,11 @@ export const sendSignupOTP = async (req, res) => {
     const otp = generateOTP();
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // If customer exists but not verified, update OTP
     if (existingCustomer) {
       existingCustomer.emailVerificationOTP = otp;
       existingCustomer.emailVerificationOTPExpiry = otpExpiry;
       await existingCustomer.save();
     } else {
-      // Create new customer with OTP
       const newCustomer = new Customer({
         email,
         emailVerificationOTP: otp,
@@ -34,7 +31,6 @@ export const sendSignupOTP = async (req, res) => {
       await newCustomer.save();
     }
 
-    // Send OTP email (with better error handling)
     try {
       const emailSent = await sendOTPEmail(email, otp, "verification");
       if (!emailSent) {
@@ -57,26 +53,21 @@ export const signup = async (req, res) => {
   try {
     const { firstName, lastName, email, password, dateOfBirth, marketingOptIn, otp } = req.body;
 
-    // Find customer by email
     const customer = await Customer.findOne({ email });
     if (!customer) {
       return res.status(400).json({ message: "Customer not found. Please request OTP first." });
     }
 
-    // Verify OTP
     if (customer.emailVerificationOTP !== otp) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
 
-    // Check if OTP is expired
     if (customer.emailVerificationOTPExpiry < new Date()) {
       return res.status(400).json({ message: "OTP has expired. Please request a new one." });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Update customer with complete information
     customer.name = `${firstName} ${lastName}`;
     customer.password = hashedPassword;
     customer.dateOfBirth = dateOfBirth;
@@ -98,11 +89,9 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // First try to find admin user
     let user = await User.findOne({ email });
     let isAdminUser = true;
 
-    // If not found in admin users, try customers
     if (!user) {
       user = await Customer.findOne({ email });
       isAdminUser = false;
@@ -112,7 +101,6 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // Check if user is banned
     if (user.isBanned) {
       return res.status(403).json({ 
         message: "Account has been banned by administrator",
@@ -120,18 +108,15 @@ export const login = async (req, res) => {
       });
     }
 
-    // Check if password exists (for OTP users who haven't set password yet)
     if (!user.password) {
       return res.status(401).json({ message: "Please complete your registration first" });
     }
 
-    // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // Generate JWT token
     const token = jwt.sign(
       { 
         userId: user._id, 
@@ -141,7 +126,7 @@ export const login = async (req, res) => {
         userType: isAdminUser ? "admin" : "customer"
       },
       process.env.JWT_SECRET || "your-secret-key",
-      { expiresIn: "30d" } // 30 days token
+      { expiresIn: "30d" }
     );
 
     res.json({
@@ -163,24 +148,30 @@ export const login = async (req, res) => {
   }
 };
 
-// Forgot Password - Send OTP
+// ✅ Forgot Password (Admin + Customer)
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
-    const user = await User.findOne({ email });
+    let user = await User.findOne({ email });
+    let isCustomer = false;
+
+    if (!user) {
+      user = await Customer.findOne({ email });
+      isCustomer = true;
+    }
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
     const otp = generateOTP();
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
     user.resetPasswordOTP = otp;
     user.resetPasswordOTPExpiry = otpExpiry;
     await user.save();
 
-    // Send OTP email
     const emailSent = await sendOTPEmail(email, otp, "reset");
     
     if (!emailSent) {
@@ -193,30 +184,33 @@ export const forgotPassword = async (req, res) => {
   }
 };
 
-// Reset Password with OTP
+// ✅ Reset Password with OTP (Admin + Customer)
 export const resetPassword = async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
 
-    const user = await User.findOne({ email });
+    let user = await User.findOne({ email });
+    let isCustomer = false;
+
+    if (!user) {
+      user = await Customer.findOne({ email });
+      isCustomer = true;
+    }
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Verify OTP
     if (user.resetPasswordOTP !== otp) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
 
-    // Check if OTP is expired
     if (user.resetPasswordOTPExpiry < new Date()) {
       return res.status(400).json({ message: "OTP has expired. Please request a new one." });
     }
 
-    // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update password and clear OTP
     user.password = hashedPassword;
     user.resetPasswordOTP = undefined;
     user.resetPasswordOTPExpiry = undefined;
