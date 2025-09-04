@@ -102,6 +102,29 @@ const orderSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  // Payment Gateway Integration
+  paymentGateway: {
+    type: String,
+    enum: ["ngenius", "manual"],
+    default: "manual"
+  },
+  paymentGatewayOrderId: {
+    type: String, // N-Genius order ID
+  },
+  paymentGatewayTransactionId: {
+    type: String, // N-Genius transaction ID
+  },
+  paymentUrl: {
+    type: String, // N-Genius payment URL
+  },
+  paymentGatewayStatus: {
+    type: String,
+    enum: ["pending", "captured", "failed", "cancelled"],
+    default: "pending"
+  },
+  paymentGatewayResponse: {
+    type: mongoose.Schema.Types.Mixed, // Store full N-Genius response
+  }
 }, {
   timestamps: true,
 });

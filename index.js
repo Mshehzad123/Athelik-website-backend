@@ -22,6 +22,7 @@ import categoryRoutes from "./routes/categoryRoutes.js";
 import subCategoryRoutes from "./routes/subCategoryRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import formRoutes from "./routes/formRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 
 // Import middleware
 import { initializeUsers } from "./middleware/auth.js";
@@ -91,6 +92,7 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/subcategories", subCategoryRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/form", formRoutes);
+app.use("/api/payments", paymentRoutes);
 
 // Public product routes (no authentication required)
 app.use("/api/public/products", productRoutes);
