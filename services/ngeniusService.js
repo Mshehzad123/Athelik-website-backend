@@ -76,6 +76,13 @@ class NGeniusService {
     try {
       const accessToken = await this.getAccessToken();
       const config = this.getConfig();
+      
+      // Debug: Log transaction URL
+      console.log('🔍 Payment Order Debug:');
+      console.log('Transaction URL Base:', config.transactionUrlBase);
+      console.log('Outlet ID:', config.outletId);
+      console.log('Full Transaction URL:', `${config.transactionUrlBase}${config.outletId}/orders`);
+      
       const transactionUrl = `${config.transactionUrlBase}${config.outletId}/orders`;
 
       const paymentData = {
