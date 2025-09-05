@@ -248,7 +248,14 @@ export const createOrder = async (req, res) => {
     // Process each item
     for (const item of items) {
       try {
-        const product = await Product.findById(item.productId);
+        // Extract actual productId from variantId if it's a composite string
+        let actualProductId = item.productId;
+        if (item.productId && item.productId.includes('-')) {
+          // If productId is in format "productId-size-color", extract just the productId part
+          actualProductId = item.productId.split('-')[0];
+        }
+        
+        const product = await Product.findById(actualProductId);
         if (!product) {
           // If product not found, use the data from frontend but create a valid ObjectId
           const itemTotal = item.price * item.quantity;
