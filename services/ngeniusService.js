@@ -107,6 +107,10 @@ class NGeniusService {
         language: "en"
       };
 
+      // Debug: Log payment data
+      console.log('🔍 Payment Data Debug:');
+      console.log('Payment Data:', JSON.stringify(paymentData, null, 2));
+      
       const response = await axios.post(transactionUrl, paymentData, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
