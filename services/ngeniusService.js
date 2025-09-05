@@ -37,15 +37,15 @@ class NGeniusService {
 
       const authString = Buffer.from(`${config.apiKey}:`).toString('base64');
       
-      // Try with JSON format instead of form data
+      // Try with form data and no Content-Type header
+      const formData = new URLSearchParams();
+      formData.append('grant_type', 'client_credentials');
+      
       const response = await axios.post(config.tokenUrl, 
-        {
-          grant_type: 'client_credentials'
-        },
+        formData.toString(),
         {
           headers: {
             'Authorization': `Basic ${authString}`,
-            'Content-Type': 'application/json',
             'Accept': 'application/json'
           }
         }
