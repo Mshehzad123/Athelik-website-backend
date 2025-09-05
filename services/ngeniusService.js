@@ -36,24 +36,23 @@ class NGeniusService {
       console.log('Transaction URL Base:', config.transactionUrlBase);
 
       const authString = Buffer.from(`${config.apiKey}:`).toString('base64');
-      
-      // Try with form data and no Content-Type header
-      const formData = new URLSearchParams();
-      formData.append('grant_type', 'client_credentials');
-      
-      const response = await axios.post(config.tokenUrl, 
-        formData.toString(),
+
+      // Send empty JSON body as per N-Genius docs
+      const response = await axios.post(
+        config.tokenUrl,
+        {}, // empty body
         {
           headers: {
             'Authorization': `Basic ${authString}`,
-            'Accept': 'application/json'
+            'Content-Type': 'application/vnd.ni-identity.v1+json',
+            'Accept': 'application/vnd.ni-identity.v1+json'
           }
         }
       );
 
       this.accessToken = response.data.access_token;
       this.tokenExpiry = Date.now() + (response.data.expires_in * 1000) - 60000; // 1 minute buffer
-      
+
       return this.accessToken;
     } catch (error) {
       console.error('Error getting N-Genius access token:', error.response?.data || error.message);
@@ -108,8 +107,7 @@ class NGeniusService {
   // Verify webhook signature (optional but recommended)
   verifyWebhookSignature(payload, signature) {
     // Implement webhook signature verification if N-Genius provides it
-    // This is important for security
-    return true; // Placeholder - implement actual verification
+    return true; // Placeholder
   }
 }
 
