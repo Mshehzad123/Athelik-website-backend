@@ -3,12 +3,18 @@ import axios from 'axios';
 
 class NGeniusService {
   constructor() {
-    this.apiKey = process.env.N_GENIUS_API_KEY;
-    this.outletId = process.env.N_GENIUS_OUTLET_ID;
-    this.tokenUrl = process.env.N_GENIUS_TOKEN_URL;
-    this.transactionUrlBase = process.env.N_GENIUS_TRANSACTION_URL_BASE;
     this.accessToken = null;
     this.tokenExpiry = null;
+  }
+
+  // Lazy loading of environment variables
+  getConfig() {
+    return {
+      apiKey: process.env.N_GENIUS_API_KEY,
+      outletId: process.env.N_GENIUS_OUTLET_ID,
+      tokenUrl: process.env.N_GENIUS_TOKEN_URL,
+      transactionUrlBase: process.env.N_GENIUS_TRANSACTION_URL_BASE
+    };
   }
 
   // Get access token from N-Genius
@@ -19,16 +25,19 @@ class NGeniusService {
         return this.accessToken;
       }
 
+      // Get config with lazy loading
+      const config = this.getConfig();
+
       // Debug: Log environment variables
       console.log('🔍 N-Genius Debug:');
-      console.log('API Key:', this.apiKey ? 'SET' : 'NOT SET');
-      console.log('Outlet ID:', this.outletId);
-      console.log('Token URL:', this.tokenUrl);
-      console.log('Transaction URL Base:', this.transactionUrlBase);
+      console.log('API Key:', config.apiKey ? 'SET' : 'NOT SET');
+      console.log('Outlet ID:', config.outletId);
+      console.log('Token URL:', config.tokenUrl);
+      console.log('Transaction URL Base:', config.transactionUrlBase);
 
-      const authString = Buffer.from(`${this.apiKey}:`).toString('base64');
+      const authString = Buffer.from(`${config.apiKey}:`).toString('base64');
       
-      const response = await axios.post(this.tokenUrl, 
+      const response = await axios.post(config.tokenUrl, 
         'grant_type=client_credentials',
         {
           headers: {
@@ -52,7 +61,8 @@ class NGeniusService {
   async createPaymentOrder(orderData) {
     try {
       const accessToken = await this.getAccessToken();
-      const transactionUrl = `${this.transactionUrlBase}${this.outletId}/orders`;
+      const config = this.getConfig();
+      const transactionUrl = `${config.transactionUrlBase}${config.outletId}/orders`;
 
       const paymentData = {
         action: "PURCHASE",
