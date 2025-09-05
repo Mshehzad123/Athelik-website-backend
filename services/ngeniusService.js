@@ -19,6 +19,13 @@ class NGeniusService {
         return this.accessToken;
       }
 
+      // Debug: Log environment variables
+      console.log('🔍 N-Genius Debug:');
+      console.log('API Key:', this.apiKey ? 'SET' : 'NOT SET');
+      console.log('Outlet ID:', this.outletId);
+      console.log('Token URL:', this.tokenUrl);
+      console.log('Transaction URL Base:', this.transactionUrlBase);
+
       const authString = Buffer.from(`${this.apiKey}:`).toString('base64');
       
       const response = await axios.post(this.tokenUrl, 
