@@ -35,27 +35,28 @@ class NGeniusService {
       console.log('Token URL:', config.tokenUrl);
       console.log('Transaction URL Base:', config.transactionUrlBase);
 
-      const authString = Buffer.from(`${config.apiKey}:`).toString('base64');
+      // Decode API key from Base64
+      const decodedApiKey = Buffer.from(config.apiKey, 'base64').toString('utf8');
+      const authString = Buffer.from(`${decodedApiKey}:`).toString('base64');
       
       // Debug: Log what we're sending
       console.log('🔍 Request Debug:');
       console.log('API Key (first 10 chars):', config.apiKey ? config.apiKey.substring(0, 10) + '...' : 'NOT SET');
+      console.log('Decoded API Key (first 20 chars):', decodedApiKey.substring(0, 20) + '...');
       console.log('Auth String (first 20 chars):', authString.substring(0, 20) + '...');
       console.log('Token URL:', config.tokenUrl);
-      console.log('Full Authorization header:', `Basic ${authString.substring(0, 20)}...`);
       
-      // Try with form data as per N-Genius docs
-      const formData = new URLSearchParams();
-      formData.append('grant_type', 'client_credentials');
-      
+      // Use working configuration from test
       const response = await axios.post(
         config.tokenUrl,
-        formData.toString(),
+        {
+          grant_type: 'client_credentials'
+        },
         {
           headers: {
             'Authorization': `Basic ${authString}`,
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Accept': 'application/json'
+            'Content-Type': 'application/vnd.ni-identity.v1+json',
+            'Accept': 'application/vnd.ni-identity.v1+json'
           }
         }
       );
