@@ -127,6 +127,32 @@ class NGeniusService {
   }
 
   // Verify webhook signature (optional but recommended)
+  async getPaymentStatus(orderReference) {
+    try {
+      const accessToken = await this.getAccessToken();
+      const config = this.getConfig();
+      
+      const statusUrl = `${config.transactionUrlBase}${config.outletId}/orders/${orderReference}`;
+      
+      console.log('🔍 Checking payment status for:', orderReference);
+      console.log('Status URL:', statusUrl);
+      
+      const response = await axios.get(statusUrl, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/vnd.ni-payment.v2+json'
+        }
+      });
+      
+      console.log('✅ Payment status retrieved:', response.data);
+      return response.data;
+      
+    } catch (error) {
+      console.error('Error getting payment status:', error);
+      throw error;
+    }
+  }
+
   verifyWebhookSignature(payload, signature) {
     // Implement webhook signature verification if N-Genius provides it
     return true; // Placeholder

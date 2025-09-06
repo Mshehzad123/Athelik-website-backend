@@ -2,7 +2,8 @@ import express from 'express';
 import { 
   createNGeniusPayment, 
   handleNGeniusWebhook, 
-  getPaymentStatus 
+  getPaymentStatus,
+  handlePaymentSuccess
 } from '../controllers/paymentController.js';
 
 const router = express.Router();
@@ -11,5 +12,6 @@ const router = express.Router();
 router.post('/ngenius/create/:orderId', createNGeniusPayment);
 router.post('/ngenius/webhook', handleNGeniusWebhook);
 router.get('/status/:orderId', getPaymentStatus);
+router.get('/success/:orderId', handlePaymentSuccess);
 
 export default router;

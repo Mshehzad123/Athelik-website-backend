@@ -357,22 +357,18 @@ export const createOrder = async (req, res) => {
       total,
       notes,
       isFreeShipping: shippingCost === 0,
+      status: "pending", // Order created but payment not completed
+      paymentStatus: "pending", // Payment not initiated yet
+      paymentGateway: "ngenius", // Set payment gateway
+      paymentGatewayStatus: "pending", // Payment gateway status
     });
     
     console.log("Order object before save:", JSON.stringify(order, null, 2));
 
     await order.save();
 
-    // Send confirmation email and track success
-    let emailSent = false;
-    try {
-      await sendOrderConfirmationEmail(order);
-      emailSent = true;
-      console.log("✅ Order confirmation email sent successfully");
-    } catch (emailError) {
-      console.error("❌ Email sending failed, but order was created:", emailError);
-      emailSent = false;
-    }
+    // Don't send confirmation email yet - wait for payment success
+    console.log("✅ Order created successfully, waiting for payment confirmation");
 
     res.status(201).json({
       success: true,
