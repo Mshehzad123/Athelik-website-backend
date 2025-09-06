@@ -374,7 +374,7 @@ export const createOrder = async (req, res) => {
       success: true,
       message: "Order created successfully",
       data: order,
-      emailSent: emailSent,
+      emailSent: false, // No email sent yet - waiting for payment success
       bundleDiscount: bundleDiscountInfo
     });
   } catch (error) {
